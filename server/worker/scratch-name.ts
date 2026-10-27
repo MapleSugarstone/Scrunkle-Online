@@ -13,7 +13,7 @@ export async function checkName(name: string): Promise<NameCheck> {
   let res: Response;
   try {
     res = await fetch(USERS + encodeURIComponent(name), {
-      headers: { accept: 'application/json', 'user-agent': 'game-rooms' },
+      headers: { accept: 'application/json', 'user-agent': 'scrunkle-rooms' },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch (e) {
