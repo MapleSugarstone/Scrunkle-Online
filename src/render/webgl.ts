@@ -6,10 +6,30 @@ import type { PenCmd, Runtime, Tint } from '../engine/runtime.ts';
 import { RenderModel } from '../engine/render-model.ts';
 import { cos, sin } from '../engine/dmath.ts';
 import type { Effects } from '../engine/target.ts';
-import { EFFECT_BITS, FRAGMENT, VERTEX } from './shaders.ts';
+import { EFFECT_BITS, FRAGMENT, POST_VERTEX, QUANTIZE, UPSCALE, VERTEX } from './shaders.ts';
 
 const NATIVE_W = STAGE_W;
 const NATIVE_H = STAGE_H;
+/** Stage pixels per side of one pixel in the old flash game display mode. */
+const FLASH_DIVISOR = 2;
+/** The texture cache level of a vector costume's handheld image, which no power-of-two mip uses. */
+const HANDHELD_LEVEL = -1;
+
+/**
+ * How the stage reaches the screen. `smooth` draws at the screen's resolution as the original does. `flash` draws at
+ * the stage's size, halves it, dithers it to 256 colors and enlarges it. `handheld` draws on a grid smaller than the
+ * stage (`handheldScale`), rasterizes each vector costume once at that same scale so a costume at its normal size
+ * gets one texel per grid pixel, samples every costume with nearest filtering and enlarges the result.
+ */
+export type DisplayMode = 'smooth' | 'flash' | 'handheld';
+
+/** An offscreen image the display modes draw into. */
+interface Target {
+  tex: WebGLTexture;
+  fbo: WebGLFramebuffer;
+  w: number;
+  h: number;
+}
 /** Share of the remaining distance a smoothed stamp covers per drawn frame, and the jump (stage units) drawn at once. */
 const SMOOTH_RATE = 0.45;
 const SMOOTH_SNAP = 90;
@@ -91,6 +111,12 @@ export class WebGLRenderer {
   private penEpoch = -1;
   private emptyTex: WebGLTexture;
   private mipCanvas = new Map<number, HTMLCanvasElement>();
+  private display: DisplayMode = 'smooth';
+  private targets = new Map<string, Target>();
+  /** Handheld mode's grid and vector costume size as a share of the stage's: 0.75 draws a 640x360 stage at 480x270. */
+  handheldScale = 0.75;
+  /** One canvas for every handheld image, so the per-costume mip canvases keep the original's readback order. */
+  private handheldCanvas: HTMLCanvasElement | null = null;
 
   constructor(canvas: HTMLCanvasElement, skins: SkinDef[]) {
     this.canvas = canvas;
@@ -190,7 +216,7 @@ export class WebGLRenderer {
    */
   private prepare(i: number): void {
     const gl = this.gl;
-    const f = Math.max(this.canvas.width / NATIVE_W, this.canvas.height / NATIVE_H, 1);
+    const f = this.display === 'smooth' ? Math.max(this.canvas.width / NATIVE_W, this.canvas.height / NATIVE_H, 1) : 1;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, 1, 1);
     gl.enable(gl.SCISSOR_TEST);
@@ -245,7 +271,8 @@ export class WebGLRenderer {
     const cache = this.textures[skinIdx];
     let level = 0;
     let mipScale = 1;
-    if (skin.kind === 'svg') {
+    if (skin.kind === 'svg' && this.display === 'handheld') level = HANDHELD_LEVEL;
+    else if (skin.kind === 'svg') {
       const requested = Math.min(Math.max(Math.abs(scaleX), Math.abs(scaleY)) / 100, skin.maxScale);
       level = Math.max(Math.ceil(Math.log2(requested)) + MIP_OFFSET, 0);
       mipScale = Math.pow(2, level - MIP_OFFSET);
@@ -253,7 +280,22 @@ export class WebGLRenderer {
     const hit = cache.get(level);
     if (hit !== undefined) return hit ?? this.emptyTex;
     let source: TexImageSource | ImageData = img;
-    if (skin.kind === 'svg') {
+    if (level === HANDHELD_LEVEL) {
+      if (skin.w <= 0 || skin.h <= 0) {
+        cache.set(level, null);
+        return this.emptyTex;
+      }
+      // A whole number of pixels on each side, stretched to fill the costume's box when drawn.
+      const c = (this.handheldCanvas ??= document.createElement('canvas'));
+      c.width = Math.max(1, Math.round(skin.w * this.handheldScale));
+      c.height = Math.max(1, Math.round(skin.h * this.handheldScale));
+      const ctx = c.getContext('2d', { willReadFrequently: true })!;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.setTransform(c.width / skin.w, 0, 0, c.height / skin.h, 0, 0);
+      ctx.drawImage(img, 0, 0);
+      source = ctx.getImageData(0, 0, c.width, c.height);
+    } else if (skin.kind === 'svg') {
       // One canvas per costume, used for its mips in the same order as the original renderer: the
       // browser moves a canvas to its CPU rasterizer after a few readbacks, which antialiases differently.
       let c = this.mipCanvas.get(skinIdx);
@@ -285,7 +327,7 @@ export class WebGLRenderer {
   }
 
   private useNearest(skin: SkinDef, d: DrawState, scaleX: number, scaleY: number): boolean {
-    if (skin.kind === 'bitmap') return true;
+    if (skin.kind === 'bitmap' || this.display === 'handheld') return true;
     if (d.fx.fisheye || d.fx.whirl || d.fx.pixelate || d.fx.mosaic) return false;
     if (d.dir % 90 !== 0) return false;
     const ax = Math.abs(scaleX);
@@ -304,21 +346,35 @@ export class WebGLRenderer {
     if (line) defs.push('#define LINE');
     for (const [name, bit] of Object.entries(EFFECT_BITS)) if (bits & bit) defs.push(`#define ENABLE_${name}`);
     const head = `${defs.join('\n')}\n`;
+    const p = this.link(head + VERTEX, head + FRAGMENT);
+    this.programs.set(key, p);
+    return p;
+  }
+
+  /** The program for a display mode pass, compiled on first use. */
+  private postProgram(fragment: string): Program {
+    const cached = this.programs.get(fragment);
+    if (cached) return cached;
+    const p = this.link(POST_VERTEX, fragment);
+    this.programs.set(fragment, p);
+    return p;
+  }
+
+  private link(vertex: string, fragment: string): Program {
+    const gl = this.gl;
     const compile = (type: number, src: string) => {
       const s = gl.createShader(type)!;
-      gl.shaderSource(s, head + src);
+      gl.shaderSource(s, src);
       gl.compileShader(s);
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'shader error');
       return s;
     };
     const prog = gl.createProgram()!;
-    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERTEX));
-    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAGMENT));
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, vertex));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fragment));
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) ?? 'link error');
-    const p: Program = { prog, uni: new Map(), aPos: gl.getAttribLocation(prog, 'a_position'), aTex: gl.getAttribLocation(prog, 'a_texCoord') };
-    this.programs.set(key, p);
-    return p;
+    return { prog, uni: new Map(), aPos: gl.getAttribLocation(prog, 'a_position'), aTex: gl.getAttribLocation(prog, 'a_texCoord') };
   }
 
   private loc(p: Program, name: string): WebGLUniformLocation | null {
@@ -462,8 +518,10 @@ export class WebGLRenderer {
 
   /** Resizes the pen texture to match the current setting and canvas. The command list then redraws it at the new size. */
   private sizePen(): boolean {
-    const w = this.hqPen ? Math.max(NATIVE_W, this.canvas.width) : NATIVE_W;
-    const h = this.hqPen ? Math.max(NATIVE_H, this.canvas.height) : NATIVE_H;
+    const hq = this.hqPen && this.display === 'smooth';
+    const [gw, gh] = this.stageGrid();
+    const w = hq ? Math.max(NATIVE_W, this.canvas.width) : gw;
+    const h = hq ? Math.max(NATIVE_H, this.canvas.height) : gh;
     if (w === this.penW && h === this.penH) return false;
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.penTex);
@@ -475,18 +533,33 @@ export class WebGLRenderer {
 
   private stageProj = ortho(-NATIVE_W / 2, NATIVE_W / 2, -NATIVE_H / 2, NATIVE_H / 2);
 
+  /** Changes how the stage reaches the screen. The pen layer redraws under the new mode's costume rules. */
+  setDisplay(mode: DisplayMode): void {
+    if (mode === this.display) return;
+    this.display = mode;
+    this.penArr = null;
+  }
+
+  /** The pixel size the display modes draw the stage at: the stage's own size, or handheld mode's smaller grid. */
+  private stageGrid(): [number, number] {
+    const s = this.display === 'handheld' ? this.handheldScale : 1;
+    return [Math.round(NATIVE_W * s), Math.round(NATIVE_H * s)];
+  }
+
   /** Draws the current simulation state to the canvas. */
   render(rt: Runtime): void {
     const gl = this.gl;
     this.syncPen(rt);
-    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    const post = this.display !== 'smooth';
+    const [w, h] = post ? this.stageGrid() : [this.canvas.width, this.canvas.height];
+    const stageImage = post ? this.target('stage', w, h) : null;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, stageImage?.fbo ?? null);
+    gl.viewport(0, 0, w, h);
     gl.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    const fbx = this.canvas.width / NATIVE_W;
-    const fby = this.canvas.height / NATIVE_H;
-    const differs = this.canvas.width !== NATIVE_W && this.canvas.height !== NATIVE_H;
-    const sxF = differs ? fbx : 1;
-    const syF = differs ? fby : 1;
+    const differs = w !== NATIVE_W && h !== NATIVE_H;
+    const sxF = differs ? w / NATIVE_W : 1;
+    const syF = differs ? h / NATIVE_H : 1;
     const stage = rt.stage;
     this.drawSprite(drawStateOf(stage), this.stageProj, sxF, syF);
     if (rt.penCreated) this.drawPenLayer(sxF, syF);
@@ -494,6 +567,62 @@ export class WebGLRenderer {
       if (!t.visible) continue;
       this.drawSprite(drawStateOf(t, rt.tintOf?.(t)), this.stageProj, sxF, syF);
     }
+    if (stageImage) this.finishDisplay(stageImage);
+  }
+
+  /** Takes the stage image from its offscreen target to the canvas through the display mode's passes. */
+  private finishDisplay(stageImage: Target): void {
+    const gl = this.gl;
+    let src = stageImage;
+    gl.disable(gl.BLEND);
+    if (this.display === 'flash') {
+      const low = this.target('flash', Math.round(NATIVE_W / FLASH_DIVISOR), Math.round(NATIVE_H / FLASH_DIVISOR));
+      gl.bindFramebuffer(gl.FRAMEBUFFER, low.fbo);
+      gl.viewport(0, 0, low.w, low.h);
+      this.drawPost(this.postProgram(QUANTIZE), src);
+      src = low;
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    const p = this.postProgram(UPSCALE);
+    gl.useProgram(p.prog);
+    gl.uniform2f(this.loc(p, 'u_size'), src.w, src.h);
+    gl.uniform2f(this.loc(p, 'u_scale'), Math.max(1, Math.floor(this.canvas.width / src.w)), Math.max(1, Math.floor(this.canvas.height / src.h)));
+    this.drawPost(p, src);
+    gl.enable(gl.BLEND);
+  }
+
+  private drawPost(p: Program, src: Target): void {
+    const gl = this.gl;
+    gl.useProgram(p.prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quadPos);
+    gl.enableVertexAttribArray(p.aPos);
+    gl.vertexAttribPointer(p.aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, src.tex);
+    gl.uniform1i(this.loc(p, 'u_image'), 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  /** An offscreen image with linear filtering, made on first use and remade when its size changes. */
+  private target(name: string, w: number, h: number): Target {
+    const gl = this.gl;
+    const hit = this.targets.get(name);
+    if (hit && hit.w === w && hit.h === h) return hit;
+    if (hit) {
+      gl.deleteFramebuffer(hit.fbo);
+      gl.deleteTexture(hit.tex);
+    }
+    const tex = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    this.texParams();
+    const fbo = gl.createFramebuffer()!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    const t = { tex, fbo, w, h };
+    this.targets.set(name, t);
+    return t;
   }
 
   private drawPenLayer(sxF: number, syF: number): void {

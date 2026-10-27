@@ -184,3 +184,62 @@ void main() {
 #endif
 }
 `;
+
+/** A full-target quad for the display mode passes, drawn from the sprite quad's -0.5 to 0.5 corners. */
+export const POST_VERTEX = `
+attribute vec2 a_position;
+varying vec2 v_uv;
+void main() {
+  v_uv = a_position + 0.5;
+  gl_Position = vec4(a_position * 2.0, 0.0, 1.0);
+}
+`;
+
+const POST_HEAD = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform sampler2D u_image;
+varying vec2 v_uv;
+`;
+
+/**
+ * Averages each 2x2 block of the stage image (one linear sample at the block's center) and dithers the result to 256
+ * colors: the 216-color cube of steps of 51 and 46 grays in steps of 255/45. Near-gray pixels take the finer grays.
+ * The 8x8 ordered dither pattern is fixed to the pixel grid, so still images do not flicker.
+ */
+export const QUANTIZE = `${POST_HEAD}
+const float GRAY_CHROMA = 0.04;
+float bayer2(vec2 a) {
+  a = floor(a);
+  return fract(a.x * 0.5 + a.y * a.y * 0.75);
+}
+float bayer8(vec2 a) {
+  return bayer2(0.25 * a) * 0.0625 + bayer2(0.5 * a) * 0.25 + bayer2(a);
+}
+void main() {
+  vec3 c = texture2D(u_image, v_uv).rgb;
+  float t = bayer8(mod(floor(gl_FragCoord.xy), 8.0)) + 1.0 / 128.0;
+  float chroma = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
+  vec3 q = chroma < GRAY_CHROMA ? vec3(floor(dot(c, vec3(1.0 / 3.0)) * 45.0 + t) / 45.0) : floor(c * 5.0 + t) / 5.0;
+  gl_FragColor = vec4(clamp(q, 0.0, 1.0), 1.0);
+}
+`;
+
+/**
+ * Enlarges an image with square pixels: each pixel fills a whole number of target pixels (u_scale), and linear
+ * filtering blends only the one-pixel seam between neighbors, so a size that is not a whole multiple keeps even pixels.
+ */
+export const UPSCALE = `${POST_HEAD}
+uniform vec2 u_size;
+uniform vec2 u_scale;
+void main() {
+  vec2 texel = v_uv * u_size;
+  vec2 d = fract(texel) - 0.5;
+  vec2 edge = 0.5 - 0.5 / u_scale;
+  vec2 f = (d - clamp(d, -edge, edge)) * u_scale + 0.5;
+  gl_FragColor = vec4(texture2D(u_image, (floor(texel) + f) / u_size).rgb, 1.0);
+}
+`;

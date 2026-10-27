@@ -12,6 +12,8 @@ import { clock, REPLAY_NAME_MAX, replayName, replayTitle, type ReplayMeta } from
 import { deleteReplay, importReplay, listReplays, renameReplay, REPLAY_FILE_TYPE, replayFile } from './replay-store.ts';
 import { VIDEO_QUALITIES, type VideoQuality } from './replay-viewer.ts';
 import { downloadFile, fileName } from './download.ts';
+import { DISPLAY_NAMES } from './display.ts';
+import type { DisplayMode } from '../render/webgl.ts';
 
 const NAME_KEY = `${STORAGE_PREFIX}.name`;
 const DELAY_KEY = `${STORAGE_PREFIX}.delay`;
@@ -121,6 +123,8 @@ export interface LobbyHandlers {
   watch(id: string): void;
   /** The player chose to download a replay as a video. */
   recordVideo(id: string, quality: VideoQuality): void;
+  /** The player asked for the next display mode. */
+  nextDisplay(): void;
 }
 
 export class Lobby {
@@ -165,6 +169,7 @@ export class Lobby {
   private replaysView: HTMLDivElement;
   private replaysBtn: HTMLButtonElement;
   private replayList: HTMLUListElement;
+  private displayBtn: HTMLButtonElement;
 
   constructor(parent: HTMLElement, private h: LobbyHandlers) {
     this.root = el('div', 'lobby');
@@ -331,10 +336,14 @@ export class Lobby {
     this.touchBtn = el('button', 'lobby-option');
     this.touchBtn.addEventListener('click', () => this.h.touchControls(!this.touchOn));
     this.setTouch(false);
+    this.displayBtn = el('button', 'lobby-option');
+    this.displayBtn.title = 'F2: next display mode';
+    this.displayBtn.addEventListener('click', () => this.h.nextDisplay());
+    this.setDisplay('smooth');
     // The footer keeps these out of the panel's way on short screens.
     const footer = el('div', 'lobby-footer');
     const left = el('div', 'lobby-footer-left');
-    left.append(this.replaysBtn, this.touchBtn);
+    left.append(this.replaysBtn, this.touchBtn, this.displayBtn);
     void this.refreshReplays();
     footer.append(left, this.controlsBtn);
     this.root.append(panel, footer);
@@ -605,6 +614,11 @@ export class Lobby {
     this.touchOn = on;
     renderOption(this.touchBtn, 'Touch controls', on);
     this.renderControlsTab();
+  }
+
+  setDisplay(mode: DisplayMode): void {
+    const state = el('span', `lobby-option-state${mode === 'smooth' ? '' : ' on'}`, DISPLAY_NAMES[mode]);
+    this.displayBtn.replaceChildren(el('span', 'lobby-option-label', 'Display'), state);
   }
 
   /** Picks the first touch button of a swap, or swaps its action with the one picked before. */

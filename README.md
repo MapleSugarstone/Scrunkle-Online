@@ -28,6 +28,8 @@ On touch screens a joystick and five buttons appear during play, beside the stag
 
 **Leave game** under the stage goes back to the start screen. The page loads every image and short sound before **Play offline** turns on, as the original loads its whole project before it starts. The music keeps loading after that.
 
+**Display** on the start screen picks how the stage is drawn, and F2 picks the next mode at any time. **Smooth** draws at your screen's resolution. **Old flash game** draws at half the stage's size, dithers the picture to 256 colors and enlarges it. **Handheld** draws on a grid three quarters of the stage's size, turns every vector costume into a bitmap at that same scale, draws every costume with hard pixel edges and enlarges the result. The mode changes only the picture, so online players can each use a different one.
+
 ### Saves
 
 Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change, and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen, where **Save** shows your code to copy and **Load** takes a code you paste. A loaded code becomes this browser's save. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.

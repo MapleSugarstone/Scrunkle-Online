@@ -10,6 +10,7 @@ import { ReplayOffer } from './replay-offer.ts';
 import { loadReplay } from './replay-store.ts';
 import { runReplayViewer, videoType, type VideoOptions, type VideoQuality } from './replay-viewer.ts';
 import { keepSaving, loadSave } from './saves.ts';
+import { DISPLAY_NAMES, loadDisplay, nextDisplay, saveDisplay } from './display.ts';
 import { Toast } from './toast.ts';
 import { actionKeys, Pads } from './pads.ts';
 import { TouchControls } from './touch.ts';
@@ -237,8 +238,32 @@ const lobby = new Lobby(overlay, {
   touchButtons(names) {
     touch.setButtons(names);
   },
+  nextDisplay() {
+    setDisplay(nextDisplay(display));
+  },
 });
 touch.onChange = (on) => lobby.setTouch(on);
+
+let display = loadDisplay();
+function setDisplay(mode: typeof display, announce = false): void {
+  display = mode;
+  saveDisplay(mode);
+  game.renderer.setDisplay(mode);
+  lobby.setDisplay(mode);
+  game.present();
+  if (announce) toast.show(`Display: ${DISPLAY_NAMES[mode]}`, 1500);
+}
+setDisplay(display);
+// F2 works on every screen, so the capture phase sees it before the lobby keeps keys to itself.
+window.addEventListener(
+  'keydown',
+  (e) => {
+    if (e.key !== 'F2' || e.repeat) return;
+    e.preventDefault();
+    setDisplay(nextDisplay(display), true);
+  },
+  true,
+);
 // Menus act on one direction at a time; character select and matches take free movement.
 touch.menuMode = () => !seatScreen(game.rt);
 lobby.setTouch(touch.enabled);
