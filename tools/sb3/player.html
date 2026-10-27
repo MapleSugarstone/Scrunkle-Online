@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Project player</title>
+<style>
+  body { margin: 0; background: #222; color: #ddd; font: 12px monospace; }
+  canvas { display: block; width: 960px; height: 720px; outline: none; }
+</style>
+</head>
+<body>
+<canvas id="stage" width="480" height="360" tabindex="0"></canvas>
+<div id="status">loading</div>
+<script src="/node_modules/@scratch/scratch-storage/dist/web/scratch-storage.js"></script>
+<script src="/node_modules/@scratch/scratch-svg-renderer/dist/web/scratch-svg-renderer.js"></script>
+<script src="/node_modules/@scratch/scratch-render/dist/web/scratch-render.js"></script>
+<script src="/node_modules/@scratch/scratch-vm/dist/web/scratch-vm.js"></script>
+<script>
+// Plays a project in real time without sound. ?f=<path to .sb3>. window.vm is exposed for inspection.
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const canvas = document.getElementById('stage');
+  const status = document.getElementById('status');
+  const vm = window.vm = new VirtualMachine();
+  vm.attachStorage(ScratchStorage.ScratchStorage ? new ScratchStorage.ScratchStorage() : new ScratchStorage());
+  const renderer = new ScratchRender(canvas);
+  vm.attachRenderer(renderer);
+  vm.attachV2BitmapAdapter(new ScratchSVGRenderer.BitmapAdapter());
+  vm.setCompatibilityMode(true);
+  window.errors = [];
+  vm.runtime.on('RUNTIME_ERROR', e => window.errors.push(String(e)));
+  const buf = await (await fetch('/' + q.get('f'))).arrayBuffer();
+  await vm.loadProject(buf);
+  const key = k => ({ ' ': 'space', ArrowUp: 'up arrow', ArrowDown: 'down arrow', ArrowLeft: 'left arrow', ArrowRight: 'right arrow', Enter: 'enter' }[k] || k.toLowerCase());
+  canvas.addEventListener('keydown', e => { vm.postIOData('keyboard', { key: e.key, isDown: true }); e.preventDefault(); });
+  canvas.addEventListener('keyup', e => { vm.postIOData('keyboard', { key: e.key, isDown: false }); e.preventDefault(); });
+  // Scripts name keys the way Scratch does; the VM expects browser key names.
+  const browserKey = k => ({ 'up arrow': 'ArrowUp', 'down arrow': 'ArrowDown', 'left arrow': 'ArrowLeft', 'right arrow': 'ArrowRight', space: ' ', enter: 'Enter' }[k] || k);
+  window.press = (k, ms = 100) => new Promise(r => { vm.postIOData('keyboard', { key: browserKey(k), isDown: true }); setTimeout(() => { vm.postIOData('keyboard', { key: browserKey(k), isDown: false }); r(); }, ms); });
+  window.hold = (k, down) => vm.postIOData('keyboard', { key: browserKey(k), isDown: down });
+  window.v = name => { for (const t of vm.runtime.targets) { if (!t.isOriginal) continue; for (const x of Object.values(t.variables)) if (x.name === name) return x.value; } };
+  window.setv = (name, val) => { for (const t of vm.runtime.targets) { if (!t.isOriginal) continue; for (const x of Object.values(t.variables)) if (x.name === name) x.value = val; } };
+  vm.start();
+  vm.greenFlag();
+  canvas.focus();
+  status.textContent = 'running ' + q.get('f');
+  window.ready = true;
+})().catch(e => { document.getElementById('status').textContent = 'error: ' + e; window.loadError = String(e); console.error(e); });
+</script>
+</body>
+</html>

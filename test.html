@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Port test page</title>
+<style>
+  body { margin: 0; background: #222; }
+  #wrap { position: relative; display: inline-block; }
+  #stage { display: block; }
+  #overlay { position: absolute; inset: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="stage" width="640" height="360"></canvas>
+  <div id="overlay"></div>
+</div>
+<script type="module" src="/src/client/test-entry.ts"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+name = "scrunkle-rooms"
+main = "worker/index.ts"
+compatibility_date = "2026-01-01"
+send_metrics = false
+
+# Origins (no path, lowercase) of published copies of the game. Any localhost port is always allowed.
+[vars]
+ALLOWED_ORIGINS = "https://maplesugarstone.github.io"
+ROOMS_PER_DAY = "300"
+
+[observability]
+enabled = true
+
+# Only the room server's own log lines are kept. A log for every run would count each relayed message
+# against the daily log limit.
+[observability.logs]
+invocation_logs = false
+
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "Lobby"
+
+# The free plan needs Durable Objects backed by SQLite.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room", "Lobby"]

@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Reference runner</title>
+<style>
+  body { margin: 0; background: #222; color: #ddd; font: 12px monospace; }
+  canvas { display: block; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<canvas id="stage" width="640" height="360"></canvas>
+<div id="status">loading</div>
+<script src="/reference/dmath.js"></script>
+<script>
+  // Same transcendental functions as the port, so results do not depend on this browser's libm.
+  for (const k of ["sin", "cos", "tan", "asin", "acos", "atan", "atan2", "exp", "log"]) Math[k] = DMATH[k];
+</script>
+<script>
+  // Loads the runtime the project was made for, as src/game/runtime.json names it, then the harness.
+  (async () => {
+    const config = await (await fetch('/src/game/runtime.json')).json();
+    window.PORT_RUNTIME = config;
+    const canvas = document.getElementById('stage');
+    canvas.width = config.stageWidth;
+    canvas.height = config.stageHeight;
+    const scripts =
+      config.runtime === 'turbowarp'
+        ? ['/node_modules/@turbowarp/scaffolding/dist/scaffolding-min.js']
+        : ['@scratch/scratch-storage/dist/web/scratch-storage.js', '@scratch/scratch-svg-renderer/dist/web/scratch-svg-renderer.js', '@scratch/scratch-render/dist/web/scratch-render.js', '@scratch/scratch-vm/dist/web/scratch-vm.js'].map((p) => `/node_modules/${p}`);
+    for (const src of [...scripts, '/reference/harness.js']) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error(`could not load ${src}`));
+        document.body.append(s);
+      });
+    }
+  })().catch((e) => (window.H = { error: String(e) }));
+</script>
+</body>
+</html>

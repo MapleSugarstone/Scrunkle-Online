@@ -1,0 +1,44 @@
+{
+  "name": "scrunkle-online",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser port of a block-based fighting game, with rollback netplay.",
+  "scripts": {
+    "extract": "node tools/extract.mjs game.sb3",
+    "decompile": "node tools/sb3/decompile.cjs sb3/project.json out/dec",
+    "ref:dump": "tsx tools/ref-dump.ts",
+    "transpile": "tsx tools/transpile/main.ts",
+    "assets": "tsx tools/assets.ts",
+    "refmath": "esbuild src/engine/dmath.ts --bundle --format=iife --global-name=DMATH --outfile=reference/dmath.js",
+    "typecheck": "tsc --noEmit",
+    "test:parity": "tsx tools/parity-all.ts 2",
+    "test:math": "tsx tools/dmath-test.ts",
+    "dev": "vite",
+    "build": "vite build",
+    "test:rollback": "tsx tools/rollback-test.ts tests/scenarios/versus.json",
+    "worker:dev": "npm --prefix server run dev",
+    "worker:deploy": "npm --prefix server run deploy",
+    "test:net": "tsx tools/netsim.ts 2 4155 80 30 0.05 0 tests/scenarios/versus.json",
+    "lists": "tsx tools/lists.ts",
+    "ref:server": "tsx tools/ref-server.ts"
+  },
+  "devDependencies": {
+    "@scratch/scratch-render": "15.1.1",
+    "@scratch/scratch-svg-renderer": "15.1.1",
+    "@scratch/scratch-vm": "15.1.1",
+    "@turbowarp/scaffolding": "0.4.0",
+    "@types/node": "^26.6.5",
+    "@types/papaparse": "5.5.2",
+    "esbuild": "^0.28.2",
+    "jszip": "3.10.1",
+    "papaparse": "5.7.0",
+    "playwright-core": "1.64.1",
+    "tsx": "^4.23.15",
+    "typescript": "5.9",
+    "vite": "^6.4.4"
+  },
+  "dependencies": {
+    "lucide": "1.58.0"
+  }
+}

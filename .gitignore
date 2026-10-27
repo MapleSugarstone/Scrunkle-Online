@@ -1,0 +1,32 @@
+# Working notes and local tool settings
+/Notes/
+/.claude/
+
+# Dependencies and build output
+node_modules/
+/dist/
+
+# The source project, older builds and their extracted copy. Put the project at game.sb3 to regenerate the port.
+# The generated code, src/game/masks.bin and public/assets are committed, because building them needs the
+# reference runner, which a hosted build machine cannot run.
+*.sb3
+/Older Versions/
+/sb3/
+/work/
+
+# Test, profiling and tool output
+/out/
+*.log
+*.tsbuildinfo
+*.cpuprofile
+
+# Room server local state and secrets
+server/.wrangler/
+.dev.vars
+.env
+.env.*
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+desktop.ini

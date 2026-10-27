@@ -1,0 +1,6 @@
+{
+  "runtime": "turbowarp",
+  "stageWidth": 640,
+  "stageHeight": 360,
+  "framerate": 30
+}

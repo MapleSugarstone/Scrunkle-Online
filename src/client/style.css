@@ -1,0 +1,1576 @@
+:root {
+  --page-bg: #0c0e12;
+  --page-fg: #e6e8ee;
+  /* Menu palette, sampled from the game's menu screens and button costumes. */
+  --ui-text: #d7dae2;
+  --ui-heading: #b4b9c4;
+  --ui-muted: #8e94a1;
+  --ui-fill: #292929;
+  --ui-stroke: #6b7080;
+  --ui-panel: #1b1e26;
+  --ui-field: rgba(10, 12, 17, 0.55);
+  --ui-direct: #6fd18a;
+  --ui-relay: #e6c15a;
+  --monitor-bg: #e5f0ff;
+  --monitor-border: #c4ccd9;
+  --monitor-item: #fc662c;
+  --monitor-item-fg: #ffffff;
+  /* Player colors from the game's controls screen. */
+  --p1: #ef7f7f;
+  --p2: #7fdfeb;
+  --ui-menu-bg: none;
+  --ui-clouds: none;
+}
+
+.pause-menu {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6em;
+  min-width: 14em;
+  padding: 1em 1.4em;
+  font: 600 clamp(12px, calc(var(--stage-h, 360px) * 0.04), 20px) system-ui, sans-serif;
+  color: var(--ui-text);
+  background: rgba(14, 16, 22, 0.92);
+  border: 1px solid var(--ui-stroke);
+}
+
+.pause-title {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #ffffff;
+}
+
+.pause-menu button {
+  padding: 0.5em 1em;
+  font: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  background: var(--ui-fill);
+  border: 1px solid var(--p1);
+  cursor: pointer;
+}
+
+.pause-menu button:hover,
+.pause-menu button:focus-visible {
+  background: #3a2a2a;
+  outline: none;
+}
+
+.pause-hint {
+  font-size: 0.7em;
+  font-weight: 400;
+  text-align: center;
+  color: var(--ui-muted);
+}
+
+.lobby-progress {
+  min-height: 1.2em;
+  font-size: 0.8em;
+  text-align: center;
+  color: var(--ui-muted);
+}
+
+.lobby-name {
+  padding: 0.3em 0;
+  font-size: 2.2em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--page-bg);
+  color: var(--page-fg);
+  font: 14px/1.4 system-ui, sans-serif;
+  overflow: hidden;
+  overscroll-behavior: none;
+  /* No double-tap zoom on touch screens. */
+  touch-action: manipulation;
+}
+
+/* Nothing on the page is selectable or shows a text caret, except text fields, the room code and the list monitors. */
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  -webkit-user-select: none;
+  user-select: none;
+  caret-color: transparent;
+  cursor: default;
+}
+
+#app input,
+#app textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  caret-color: auto;
+  cursor: text;
+}
+
+#stage-wrap {
+  position: relative;
+  width: 480px;
+  height: 360px;
+  background: #000;
+}
+
+#stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  font-size: 2.6vmin;
+}
+
+#overlay > * {
+  pointer-events: auto;
+}
+
+#status {
+  min-height: 22px;
+  color: var(--ui-muted);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.start-button {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px 28px;
+  background: var(--ui-fill);
+  border: 1px solid var(--ui-stroke);
+  color: var(--ui-text);
+  font: 700 18px system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ question box and list monitors */
+
+.question {
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  bottom: 2%;
+  padding: 1.2% 1.6%;
+  background: #fff;
+  color: #575e75;
+  border: 2px solid #d9d9d9;
+  border-radius: 8px;
+}
+
+.question-text {
+  font-weight: 600;
+  margin-bottom: 0.6em;
+}
+
+.question-row {
+  display: flex;
+  gap: 0.5em;
+}
+
+.question-row input {
+  flex: 1;
+  font: inherit;
+  padding: 0.3em 0.6em;
+  border: 1px solid #d9d9d9;
+  border-radius: 1em;
+}
+
+.question-row button {
+  font: inherit;
+  width: 2em;
+  border: none;
+  border-radius: 50%;
+  background: #855cd6;
+  color: #fff;
+  cursor: pointer;
+}
+
+.var-monitor {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.2em 0.4em;
+  background: #e6f0ff;
+  border: 1px solid #c3ccd9;
+  border-radius: 0.3em;
+  color: #575e75;
+  font: 700 calc(var(--stage-scale, 1) * 12px) / 1.2 Helvetica, Arial, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.var-monitor .var-value {
+  min-width: 2.5em;
+  padding: 0.05em 0.4em;
+  border-radius: 0.25em;
+  background: #ff8c1a;
+  color: #fff;
+  text-align: center;
+}
+
+.var-monitor.large {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.var-monitor.large .var-value {
+  padding: 0.15em 0.5em;
+  font-size: 1.3em;
+}
+
+.say-bubble {
+  position: absolute;
+  max-width: 35%;
+  padding: 0.5em 0.8em;
+  background: #fff;
+  border: 2px solid #c3ccd9;
+  border-radius: 1em;
+  color: #575e75;
+  font: 700 calc(var(--stage-scale, 1) * 14px) / 1.2 Helvetica, Arial, sans-serif;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.list-monitor {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: var(--monitor-bg);
+  border: 1px solid var(--monitor-border);
+  border-radius: 4px;
+  color: #575e75;
+  font-size: 1.4vmin;
+  overflow: hidden;
+}
+
+.list-header,
+.list-footer {
+  padding: 2px 4px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #fff;
+}
+
+.list-body {
+  flex: 1;
+  overflow: auto;
+  padding: 2px;
+  user-select: text;
+}
+
+.list-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin: 1px 0;
+}
+
+.list-index {
+  min-width: 1.5em;
+  font-weight: 700;
+}
+
+.list-value {
+  flex: 1;
+  padding: 1px 4px;
+  background: var(--monitor-item);
+  color: var(--monitor-item-fg);
+  border-radius: 3px;
+  word-break: break-all;
+  user-select: all;
+}
+
+/* ------------------------------------------------------------------ lobby */
+
+/* Buttons and player cards use the menu buttons' shape: top-left and bottom-right corners cut. */
+.lobby button:not(.lobby-return, .lobby-corner, .lobby-option),
+.seat,
+.hud button,
+.test-panel button {
+  --cut: 0.45em;
+  --chamfer: polygon(0 var(--cut), var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%);
+  position: relative;
+  isolation: isolate;
+  clip-path: var(--chamfer);
+}
+
+/* The fill sits 2px inside the stroke color. Its cut is 2px * (2 - sqrt 2) smaller so the diagonal stroke is 2px wide too. */
+.lobby button:not(.lobby-return, .lobby-corner, .lobby-option)::before,
+.seat::before,
+.hud button::before,
+.test-panel button::before {
+  --inner: calc(var(--cut) - 1.17px);
+  content: '';
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  clip-path: polygon(0 var(--inner), var(--inner) 0, 100% 0, 100% calc(100% - var(--inner)), calc(100% - var(--inner)) 100%, 0 100%);
+}
+
+.lobby {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  background: var(--ui-panel) var(--ui-menu-bg) center / cover no-repeat;
+  color: var(--ui-text);
+  font-size: clamp(11px, calc(var(--stage-h, 360px) * 0.032), 19px);
+  line-height: 1.35;
+}
+
+/* On a phone the stage is small, so the lobby takes the whole screen. */
+@media (orientation: portrait) and (max-width: 700px), (orientation: landscape) and (max-height: 500px) {
+  .lobby {
+    position: fixed;
+    z-index: 6;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+@media (orientation: portrait) and (max-width: 700px) {
+  .lobby {
+    font-size: clamp(13px, 4.2vw, 18px);
+  }
+
+  .lobby .lobby-footer-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+}
+
+/* A phone on its side is short, so the text follows the height and the logo is smaller. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .lobby {
+    font-size: clamp(11px, 3.3vh, 16px);
+  }
+
+  .lobby .lobby-title {
+    font-size: 0.75em;
+  }
+}
+
+.lobby::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--ui-clouds) center / cover no-repeat;
+  opacity: 0.16;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* Centered in the space above the footer, scrolling when a short screen cannot fit it. */
+.lobby-panel {
+  width: min(24em, 92%);
+  flex: 0 1 auto;
+  min-height: 0;
+  margin: auto 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-stroke) transparent;
+  padding: 0.8em 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.lobby-title {
+  margin: 0;
+  font-size: 1em;
+  display: flex;
+  justify-content: center;
+}
+
+.lobby.in-room .lobby-title {
+  display: none;
+}
+
+/* Both logo costumes are 480x360 frames. This crops x 168-319, y 125-242 at 0.085em per pixel. */
+.lobby-logo {
+  display: block;
+  width: 12.9em;
+  height: 9.95em;
+  background:
+    var(--ui-logo-text) -14.28em -10.63em / 40.8em 30.6em no-repeat,
+    var(--ui-logo-gem) -14.28em -10.63em / 40.8em 30.6em no-repeat;
+  mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent);
+}
+
+.lobby-menu,
+.lobby-room {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.lobby-heading {
+  margin-top: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ui-heading);
+}
+
+.lobby-heading::before {
+  content: '- ';
+}
+
+.lobby-heading::after {
+  content: ' -';
+}
+
+.lobby button:not(.lobby-return, .lobby-corner, .lobby-option),
+.hud button,
+.test-panel button {
+  --stroke: var(--ui-stroke);
+  --fill: var(--ui-fill);
+  font: inherit;
+  padding: 0.65em 1em;
+  color: #eceef2;
+  background: var(--stroke);
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.lobby button:not(.lobby-return, .lobby-corner, .lobby-option)::before,
+.hud button::before,
+.test-panel button::before {
+  background: var(--fill);
+}
+
+.lobby button:hover:not(:disabled),
+.lobby button:focus-visible,
+.hud button:hover,
+.hud button:focus-visible,
+.test-panel button:hover {
+  --stroke: #ffffff;
+  outline: none;
+}
+
+.lobby button.primary {
+  --stroke: var(--p1);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.lobby button.primary:hover:not(:disabled),
+.lobby button.primary:focus-visible {
+  --stroke: #e06a6a;
+  --fill: #3a2727;
+}
+
+.lobby button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.lobby input,
+.lobby select {
+  font: inherit;
+  min-width: 0;
+  padding: 0.4em 0.6em;
+  color: #ffffff;
+  background: var(--ui-field);
+  border: 1px solid var(--ui-stroke);
+  border-radius: 0;
+}
+
+.lobby input:focus,
+.lobby select:focus {
+  outline: none;
+  border-color: #ffffff;
+}
+
+.lobby select option {
+  background: var(--ui-panel);
+}
+
+.lobby input::placeholder {
+  color: var(--ui-muted);
+}
+
+.lobby-field {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.lobby-field > span {
+  min-width: 5em;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ui-muted);
+}
+
+.lobby-field input,
+.lobby-field select {
+  flex: 1;
+}
+
+.lobby-join {
+  display: flex;
+  gap: 0.6em;
+}
+
+.lobby-join input {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.lobby-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+/* Room header, laid out like the bar at the top of the character select. */
+.lobby-bar {
+  display: flex;
+  align-items: center;
+  padding: 0 0.2em 0.4em;
+  border-bottom: 1px solid #ffffff;
+  white-space: nowrap;
+}
+
+.lobby-bar > * {
+  flex: 1 1 auto;
+  padding: 0 0.8em;
+  text-align: center;
+}
+
+.lobby-bar > * + * {
+  border-left: 2px solid #ffffff;
+}
+
+.lobby-bar-title {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 1.1em;
+}
+
+.lobby-bar .code {
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  -webkit-user-select: all;
+  user-select: all;
+  cursor: text;
+}
+
+.lobby-seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.seat {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  min-height: 2.4em;
+  padding: 0.3em 0.8em 0.3em 0.5em;
+  background: var(--c);
+}
+
+.seat::before {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 24%, var(--ui-panel)), var(--ui-panel) 75%);
+}
+
+.seat-open {
+  opacity: 0.5;
+}
+
+.seat-open .seat-badge {
+  filter: grayscale(1);
+}
+
+.seat-badge {
+  width: 1.8em;
+  height: 1.8em;
+  flex: none;
+}
+
+.seat-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.seat-empty {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ui-muted);
+}
+
+/* Small label in the style of the "PLY 1" tag under each character card. */
+.seat-tag {
+  padding: 0 0.45em;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ececec;
+  background: var(--ui-fill);
+  border: 1px solid var(--c);
+}
+
+.seat-link {
+  font-size: 0.8em;
+  color: var(--ui-muted);
+}
+
+.seat-link.direct {
+  color: var(--ui-direct);
+}
+
+.seat-link.relay {
+  color: var(--ui-relay);
+}
+
+.lobby-note {
+  margin: 0;
+  text-align: center;
+  color: var(--ui-muted);
+}
+
+.lobby-status {
+  min-height: 1.4em;
+  font-size: 0.9em;
+  text-align: center;
+  color: var(--ui-heading);
+}
+
+/* The diamond return button from the character select, in the same corner. */
+.lobby-footer {
+  align-self: stretch;
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6em;
+  padding: 0 0.6em 0.4em;
+}
+
+.lobby-footer-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2em 1.8em;
+}
+
+.lobby-return {
+  height: 3em;
+  padding: 0 0 0 3.5em;
+  font: inherit;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ui-muted);
+  background: var(--ui-return) left center / 3em 3em no-repeat;
+  border: none;
+  cursor: pointer;
+}
+
+.lobby-return:hover,
+.lobby-return:focus-visible,
+.lobby-corner:hover,
+.lobby-corner:focus-visible {
+  color: #ffffff;
+  outline: none;
+}
+
+/* The main menu's Mods button, in the top-left corner. */
+.lobby-top-left {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 0.5em);
+  left: calc(env(safe-area-inset-left, 0px) + 0.6em);
+  z-index: 1;
+}
+
+/* An on/off option in the footer, with its state in a small tag. */
+.lobby-option {
+  height: 2.2em;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  font: inherit;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ui-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.lobby-option:hover,
+.lobby-option:focus-visible {
+  color: #ffffff;
+  outline: none;
+}
+
+/* One line, so a long label never pushes its state away from it. */
+.lobby-option-label {
+  white-space: nowrap;
+}
+
+.lobby-option-state {
+  min-width: 3em;
+  padding: 0.1em 0.45em;
+  font-weight: 700;
+  color: var(--ui-muted);
+  background: var(--ui-fill);
+  border: 1px solid var(--ui-stroke);
+}
+
+.lobby-option-state.on {
+  color: #ffffff;
+  border-color: var(--p1);
+}
+
+/* The main menu's controls button, in the same corner. */
+.lobby-corner {
+  flex: none;
+  height: 2.6em;
+  padding: 0 3.8em 0 0;
+  font: inherit;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ui-muted);
+  background: var(--ui-controls) right center / 3.4em 2.47em no-repeat;
+  border: none;
+  cursor: pointer;
+}
+
+.lobby-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.3em 1.2em;
+}
+
+/* The key column has a fixed width in the row's em, so a smaller font for long key names keeps the button size. */
+.control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.4em;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.control > span {
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ui-muted);
+}
+
+/* Specific enough to win over the general lobby button rule. */
+.lobby .controls-grid button.control-key {
+  width: 100%;
+  min-height: 2.2em;
+  font-size: 0.9em;
+  padding: 0.4em 0.3em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.lobby .controls-grid button.control-key.long {
+  font-size: 0.72em;
+  min-height: 2.75em;
+}
+
+.lobby .controls-grid button.control-key.capturing {
+  --stroke: var(--p1);
+  color: #ffffff;
+}
+
+.lobby-actions {
+  display: flex;
+  gap: 0.6em;
+}
+
+.lobby-actions button {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.lobby-controls .lobby-note {
+  font-size: 0.85em;
+}
+
+.controls-tabs {
+  display: flex;
+  gap: 0.6em;
+}
+
+.controls-tabs button {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.lobby .controls-tabs button[aria-pressed='true'] {
+  --stroke: var(--p1);
+  color: #ffffff;
+}
+
+.controls-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+/* The controls menu's copy of the touch buttons in their on-screen places. */
+.touch-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.touch-edit-pad {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.6em;
+}
+
+.touch-edit-face {
+  position: relative;
+  flex: none;
+  width: 10em;
+  height: 10em;
+}
+
+.touch-edit-small {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.lobby .touch-edit button {
+  padding: 0;
+  font-size: 0.75em;
+  letter-spacing: 0.04em;
+}
+
+.lobby .touch-edit-face button {
+  position: absolute;
+  width: 38%;
+  height: 38%;
+  clip-path: circle(50%);
+}
+
+.lobby .touch-edit-face button::before {
+  clip-path: circle(50%);
+}
+
+.touch-edit-face .top {
+  left: 31%;
+  top: 0;
+}
+
+.touch-edit-face .left {
+  left: 0;
+  top: 31%;
+}
+
+.touch-edit-face .right {
+  left: 62%;
+  top: 31%;
+}
+
+.touch-edit-face .bottom {
+  left: 31%;
+  top: 62%;
+}
+
+.lobby .touch-edit-small button {
+  min-width: 7em;
+  padding: 0.7em 1.2em;
+  clip-path: inset(0 round 999px);
+}
+
+.lobby .touch-edit-small button::before {
+  clip-path: inset(0 round 999px);
+}
+
+.lobby .touch-edit button.picked {
+  --stroke: var(--p1);
+  --fill: #3a2727;
+  color: #ffffff;
+}
+
+/* ------------------------------------------------------------------ online HUD */
+
+.hud {
+  width: var(--stage-w, 480px);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 22px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ui-muted);
+}
+
+.hud-warn {
+  color: var(--ui-relay);
+}
+
+.hud button,
+.test-panel button {
+  padding: 2px 10px;
+  font-size: 11px;
+}
+
+.hud .hud-action {
+  --stroke: var(--p1);
+  color: #ffffff;
+}
+
+.hud .hud-leave {
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------------ mod maker test scene */
+
+.test-bar .test-frame {
+  min-width: 6em;
+  font-variant-numeric: tabular-nums;
+}
+
+.test-bar.paused .test-frame {
+  color: var(--ui-relay);
+}
+
+.hud button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.test-panel {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  max-height: 45%;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: var(--ui-text);
+  background: rgba(12, 14, 18, 0.92);
+  border: 1px solid var(--ui-stroke);
+  user-select: text;
+}
+
+.test-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  color: var(--ui-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.test-panel-head button:first-of-type {
+  margin-left: auto;
+}
+
+.test-messages {
+  margin: 0;
+  padding: 0 8px 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.test-messages li {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.test-at,
+.test-times {
+  flex: none;
+  color: var(--ui-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.test-at {
+  min-width: 6.5em;
+}
+
+.test-what {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.test-error .test-what {
+  color: #ff8a80;
+}
+
+.test-warn .test-what {
+  color: var(--ui-relay);
+}
+
+/* ------------------------------------------------------------------ touch controls */
+
+/* In portrait the stage sits at the top, above the controls. */
+.touch-portrait #app {
+  justify-content: flex-start;
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+.touch {
+  --stick: min(34vmin, 150px);
+  --face: min(40vmin, 190px);
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: none;
+  pointer-events: none;
+}
+
+.touch-on .touch {
+  display: block;
+}
+
+.touch-stick {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 30vw;
+  height: 80vh;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-stick-base {
+  position: absolute;
+  left: max(calc(var(--stick) / 2 + 12px), 50%);
+  top: 62%;
+  width: var(--stick);
+  height: var(--stick);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(20, 22, 30, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+}
+
+.touch-stick-base.held {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.touch-stick-knob {
+  position: absolute;
+  left: 30%;
+  top: 30%;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  border: 2px solid var(--p1);
+}
+
+.touch-face {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: 8vh;
+  width: var(--face);
+  height: var(--face);
+}
+
+.touch-btn {
+  position: absolute;
+  width: 38%;
+  height: 38%;
+  padding: 0;
+  border-radius: 50%;
+  font: 600 clamp(9px, 2.4vmin, 13px) / 1 system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: rgba(41, 41, 41, 0.72);
+  border: 2px solid var(--ui-stroke);
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-btn.down {
+  background: rgba(193, 78, 78, 0.8);
+  border-color: #ffffff;
+}
+
+.touch-btn.top {
+  left: 31%;
+  top: 0;
+}
+
+.touch-btn.left {
+  left: 0;
+  top: 31%;
+}
+
+.touch-btn.right {
+  left: 62%;
+  top: 31%;
+}
+
+.touch-btn.bottom {
+  left: 31%;
+  top: 62%;
+}
+
+.touch-small {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  display: flex;
+  gap: 8px;
+}
+
+.touch-btn.pill {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0.6em 1em;
+  border-radius: 999px;
+}
+
+/* Portrait: everything lives in the band below the stage. */
+.touch-portrait .touch {
+  --stick: min(40vw, 30vh, 180px);
+  --face: min(48vw, 34vh, 220px);
+}
+
+.touch-portrait .touch-stick {
+  width: 50vw;
+  height: var(--touch-h);
+}
+
+.touch-portrait .touch-stick-base {
+  left: 50%;
+  top: 55%;
+}
+
+.touch-portrait .touch-face {
+  right: 5vw;
+  bottom: calc(var(--touch-h) * 0.45 - var(--face) / 2);
+}
+
+.touch-portrait .touch-small {
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: calc(var(--touch-h) - 3em);
+  transform: translateX(-50%);
+}
+
+/* The mods screen: one row per mod with its on/off option. */
+.mod-list,
+.mod-problems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.mod {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: 0.8em;
+  padding: 0.2em 0.4em;
+  background: var(--ui-field);
+  border: 1px solid var(--ui-stroke);
+}
+
+.mod-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-tag {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ui-muted);
+}
+
+.lobby .mod-delete:hover {
+  color: #ff8a8a;
+}
+
+.mod-problems li {
+  font-size: 0.8em;
+  color: #ff8a8a;
+}
+
+.lobby-mods .lobby-actions {
+  flex-wrap: wrap;
+}
+
+.lobby-mods .lobby-actions button {
+  flex: 1 1 8em;
+}
+
+/* A mod's script, shown before the player turns it on. */
+.mod-script {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0.6em;
+  background: var(--ui-field);
+  border: 1px solid var(--ui-stroke);
+}
+
+.mod-code {
+  margin: 0;
+  max-height: 12em;
+  overflow: auto;
+  padding: 0.5em;
+  font: 0.75em/1.4 ui-monospace, monospace;
+  white-space: pre;
+  user-select: text;
+  scrollbar-color: var(--ui-stroke) transparent;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.mod-code-fold summary {
+  cursor: pointer;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.mod-code-fold[open] summary {
+  margin-bottom: 0.4em;
+}
+
+/* The panel over the stage while an online game waits for a player. */
+.hud-wait {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  width: min(84%, 26em);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6em;
+  padding: 1em 1.2em;
+  text-align: center;
+  font-size: clamp(12px, calc(var(--stage-h, 360px) * 0.036), 18px);
+  color: var(--ui-text);
+  background: rgba(14, 16, 22, 0.9);
+  border: 1px solid var(--ui-stroke);
+}
+
+.hud-wait .lobby-note {
+  margin: 0;
+  color: var(--ui-muted);
+}
+
+.hud-wait button {
+  padding: 0.5em 1.2em;
+  font: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  background: var(--ui-fill);
+  border: 1px solid var(--p1);
+  cursor: pointer;
+}
+
+.hud-wait button:hover,
+.hud-wait button:focus-visible {
+  background: #3a2a2a;
+  outline: none;
+}
+
+/* ------------------------------------------------------------------ replays */
+
+/* The save-a-replay buttons use the menu buttons' shape and colors. */
+.replay-offer button {
+  --cut: 0.45em;
+  --chamfer: polygon(0 var(--cut), var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%);
+  --stroke: var(--ui-stroke);
+  --fill: var(--ui-fill);
+  position: relative;
+  isolation: isolate;
+  clip-path: var(--chamfer);
+  padding: 2px 10px;
+  font: inherit;
+  font-size: 11px;
+  color: #eceef2;
+  background: var(--stroke);
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.replay-offer button::before {
+  --inner: calc(var(--cut) - 1.17px);
+  content: '';
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  clip-path: polygon(0 var(--inner), var(--inner) 0, 100% 0, 100% calc(100% - var(--inner)), calc(100% - var(--inner)) 100%, 0 100%);
+  background: var(--fill);
+}
+
+.replay-offer button:hover {
+  --stroke: #ffffff;
+  outline: none;
+}
+
+/* Messages such as "Replay saved", at the top of the stage. */
+.toast {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  z-index: 7;
+  max-width: calc(100% - 32px);
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--ui-text);
+  background: rgba(12, 14, 18, 0.85);
+  border: 1px solid var(--ui-stroke);
+  pointer-events: none;
+}
+
+/* The question after a match, in the stage's bottom-right corner while the game goes on. */
+.replay-offer {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 7;
+  max-width: calc(100% - 16px);
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--ui-text);
+  background: rgba(12, 14, 18, 0.92);
+  border: 1px solid var(--ui-stroke);
+}
+
+.replay-offer p {
+  margin: 0 0 8px;
+}
+
+.replay-offer-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.replay-offer button.primary {
+  --stroke: var(--p1);
+  color: #ffffff;
+}
+
+.replay-bar .replay-seek {
+  flex: 1;
+  min-width: 3em;
+  accent-color: var(--p1);
+}
+
+/* Why a replay cannot play, or that it ended, over the top of the stage. */
+.replay-note {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 4;
+  padding: 6px 10px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--ui-text);
+  background: rgba(12, 14, 18, 0.9);
+  border: 1px solid var(--ui-stroke);
+}
+
+
+/* A long list of replays shrinks to the space the screen has and scrolls, so the heading and Done stay in view. */
+.lobby-replays {
+  min-height: 0;
+}
+
+.replay-list {
+  min-height: 4em;
+  max-height: 28em;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-stroke) transparent;
+}
+
+.mod.replay {
+  grid-template-columns: minmax(0, 1fr) repeat(4, auto);
+  gap: 0.2em;
+}
+
+/* A replay's download choices: MP4 or SFRP, then the video quality. */
+.export-kind {
+  display: flex;
+  gap: 0.2em;
+}
+
+.lobby .export-kind .lobby-option {
+  padding: 0 0.45em;
+  border: 1px solid transparent;
+}
+
+.lobby .export-kind .lobby-option.on {
+  color: #ffffff;
+  border-color: var(--p1);
+}
+
+.lobby select.export-quality {
+  padding: 0.1em 0.3em;
+  font-size: 0.85em;
+}
+
+/* A row asking whether to delete it: the name, the question under it, then Delete and Keep. */
+.mod.asking {
+  border-color: #ff8a8a;
+}
+
+.row-ask {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.row-question,
+.lobby .mod.asking .mod-delete {
+  color: #ff8a8a;
+}
+
+.row-question {
+  font-size: 0.75em;
+}
+
+.lobby .mod.asking .mod-delete:hover {
+  color: #ffffff;
+}
+
+.mod.asking .lobby-option {
+  padding: 0 0.4em;
+}
+
+/* An icon button: the icon alone, in the muted text color until hovered. */
+.lobby .lobby-icon {
+  width: 2.2em;
+  justify-content: center;
+}
+
+.lobby .lobby-icon svg {
+  flex: none;
+}
+
+.replay-what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.replay-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75em;
+  color: var(--ui-muted);
+}
+
+.lobby input.replay-rename {
+  width: 100%;
+  padding: 0.1em 0.4em;
+}
