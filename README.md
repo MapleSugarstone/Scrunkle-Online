@@ -42,6 +42,8 @@ After a match of 10 seconds or more, offline or online, the page asks whether to
 
 Online games are peer to peer. Every player runs the whole game from the title screen, and inputs travel directly between browsers. A small room server in `server/` hands out room codes and passes the connection setup between players. It relays inputs only for a pair of players whose direct connection fails.
 
+Before a player's first online game, the page says that playing online shares IP addresses with the other players in the room, because the connections are direct. Once they accept, that browser does not show it again.
+
 1. One player chooses **Host an online game** and shares the six-character room code.
 2. The other enters the code and chooses **Join**.
 3. The host picks the input delay and starts the game.

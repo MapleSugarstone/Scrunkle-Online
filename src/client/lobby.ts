@@ -18,6 +18,8 @@ import type { DisplayMode } from '../render/webgl.ts';
 const NAME_KEY = `${STORAGE_PREFIX}.name`;
 const DELAY_KEY = `${STORAGE_PREFIX}.delay`;
 const EXPORT_KEY = `${STORAGE_PREFIX}.replayExport`;
+/** Set once the player accepts the online notice, which then never shows again in this browser. */
+const ONLINE_NOTICE_KEY = `${STORAGE_PREFIX}.onlineNotice`;
 
 /** The last download choices: a video or a replay file, and the video's quality. */
 function loadExport(): { kind: 'mp4' | 'file'; quality: VideoQuality } {
@@ -170,6 +172,9 @@ export class Lobby {
   private replaysBtn: HTMLButtonElement;
   private replayList: HTMLUListElement;
   private displayBtn: HTMLButtonElement;
+  private noticeView: HTMLDivElement;
+  /** The Host or Join waiting for the player to accept the online notice. */
+  private afterNotice: (() => void) | null = null;
 
   constructor(parent: HTMLElement, private h: LobbyHandlers) {
     this.root = el('div', 'lobby');
@@ -326,9 +331,33 @@ export class Lobby {
     replayActions.append(upload, replaysDone, replayPick);
     this.replaysView.append(el('div', 'lobby-heading', 'Replays'), this.replayList, replayActions);
 
+    // Shown before the first Host or Join in this browser.
+    this.noticeView = el('div', 'lobby-controls');
+    this.noticeView.hidden = true;
+    const noticeOk = el('button', 'primary', 'I understand');
+    const noticeBack = el('button', '', 'Cancel');
+    const noticeActions = el('div', 'lobby-actions');
+    noticeActions.append(noticeOk, noticeBack);
+    this.noticeView.append(
+      el('div', 'lobby-heading', 'Playing online'),
+      el('p', 'lobby-note', "Online games connect you straight to the other players in your room (peer to peer, through WebRTC). This means you and they can see each other's IP addresses. Only play online with people you are comfortable sharing that with."),
+      noticeActions,
+    );
+    noticeOk.addEventListener('click', () => {
+      store(ONLINE_NOTICE_KEY, '1');
+      const go = this.afterNotice;
+      this.afterNotice = null;
+      this.show('menu');
+      go?.();
+    });
+    noticeBack.addEventListener('click', () => {
+      this.afterNotice = null;
+      this.show('menu');
+    });
+
     this.status = el('div', 'lobby-status');
     this.progress = el('div', 'lobby-progress');
-    panel.append(this.menu, this.room, this.controlsView, this.replaysView, this.status, this.progress);
+    panel.append(this.menu, this.room, this.controlsView, this.replaysView, this.noticeView, this.status, this.progress);
     this.replaysBtn = el('button', 'lobby-option', 'Replays');
     this.replaysBtn.addEventListener('click', () => this.openReplays());
     this.controlsBtn = el('button', 'lobby-option', 'Controls');
@@ -353,11 +382,11 @@ export class Lobby {
     localBtn.addEventListener('click', () => !this.loading && this.h.local());
     hostBtn.addEventListener('click', () => {
       const name = this.name();
-      if (name) this.h.host(name);
+      if (name) this.online(() => this.h.host(name));
     });
     const join = () => {
       const name = this.name();
-      if (name) this.h.join(name, codeIn.value.trim().toUpperCase());
+      if (name) this.online(() => this.h.join(name, codeIn.value.trim().toUpperCase()));
     };
     joinBtn.addEventListener('click', join);
     codeIn.addEventListener('keydown', (e) => e.key === 'Enter' && join());
@@ -414,7 +443,18 @@ export class Lobby {
     void this.refreshReplays();
   }
 
-  private show(view: 'menu' | 'room' | 'controls' | 'replays'): void {
+  /** Runs an online action, after the player accepts the online notice if they have not yet. */
+  private online(action: () => void): void {
+    if (load(ONLINE_NOTICE_KEY, '') === '1') {
+      action();
+      return;
+    }
+    this.afterNotice = action;
+    this.setStatus('');
+    this.show('notice');
+  }
+
+  private show(view: 'menu' | 'room' | 'controls' | 'replays' | 'notice'): void {
     if (view === 'menu' || view === 'room') this.backTo = view;
     if (this.padTimer) clearInterval(this.padTimer);
     this.padTimer = null;
@@ -425,9 +465,11 @@ export class Lobby {
     this.room.hidden = view !== 'room';
     this.controlsView.hidden = view !== 'controls';
     this.replaysView.hidden = view !== 'replays';
+    this.noticeView.hidden = view !== 'notice';
     this.touchBtn.hidden = view !== 'menu';
     this.replaysBtn.hidden = view !== 'menu';
-    this.controlsBtn.hidden = view === 'controls' || view === 'replays';
+    this.displayBtn.hidden = view !== 'menu';
+    this.controlsBtn.hidden = view === 'controls' || view === 'replays' || view === 'notice';
     this.root.classList.toggle('in-room', view === 'room');
   }
 
