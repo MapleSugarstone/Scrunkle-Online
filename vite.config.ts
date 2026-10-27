@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 /** A hash of every file that decides what the simulation does, so two builds that would disagree never share a room. */
 function buildFingerprint(): string {
@@ -17,7 +17,20 @@ function buildFingerprint(): string {
   return hash.digest('hex').slice(0, 12);
 }
 
+/** Adds the preview image's hash to its address in the page, because chat apps cache a link preview image by address. */
+function versionPreview(): Plugin {
+  return {
+    name: 'version-preview',
+    transformIndexHtml(html) {
+      if (!existsSync('public/preview.png')) return html;
+      const v = createHash('sha256').update(readFileSync('public/preview.png')).digest('hex').slice(0, 8);
+      return html.replace(/\/preview\.png"/g, `/preview.png?v=${v}"`);
+    },
+  };
+}
+
 export default defineConfig({
+  plugins: [versionPreview()],
   // Relative asset paths let the same build run from any folder, including a repository subfolder on a static host.
   base: './',
   define: {
