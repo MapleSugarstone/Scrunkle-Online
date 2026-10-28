@@ -7,6 +7,7 @@ import { installSilhouettes } from '../game/silhouettes.ts';
 import { decodeMaskSet, type MaskSet } from '../engine/masks.ts';
 import maskUrl from '../game/masks.bin?url';
 import { pauseRule } from '../game/pause.ts';
+import { CODE_ANSWERS } from '../game/saves.ts';
 import { WebGLRenderer } from '../render/webgl.ts';
 import { EFFECT_BITS } from '../render/shaders.ts';
 import { AudioOut } from './audio.ts';
@@ -68,6 +69,7 @@ export class Game {
     this.renderer = new WebGLRenderer(canvas, skins);
     this.audio = new AudioOut();
     this.question = new QuestionBox(overlay);
+    this.question.allowFiles = CODE_ANSWERS;
     this.lists = new ListMonitors(overlay, monitors);
     this.vars = new VarMonitors(overlay, monitors);
     this.bubbles = new Bubbles(overlay);

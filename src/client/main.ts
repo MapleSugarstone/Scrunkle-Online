@@ -9,7 +9,7 @@ import { ReplayRecorder, replayName, runtimeState, snapshotState } from './repla
 import { ReplayOffer } from './replay-offer.ts';
 import { loadReplay } from './replay-store.ts';
 import { runReplayViewer, videoType, type VideoOptions, type VideoQuality } from './replay-viewer.ts';
-import { keepSaving, loadSave } from './saves.ts';
+import { codeFiles, keepSaving, loadSave } from './saves.ts';
 import { DISPLAY_NAMES, loadDisplay, nextDisplay, saveDisplay } from './display.ts';
 import { Toast } from './toast.ts';
 import { actionKeys, Pads } from './pads.ts';
@@ -173,13 +173,17 @@ const lobby = new Lobby(overlay, {
     const replay = recorder(game.rt.t0, false, []);
     const bar = leaveBar();
     const stopSaving = keepSaving(() => game.rt);
+    const saveCodes = codeFiles((name) => toast.show(`Saved ${name}.`, 4000));
     const stopLoop = startFixedLoop(
       () => {
         const p = sampleLocal();
         game.step([p]);
         replay.frame([p], runtimeState(game.rt));
       },
-      () => game.present(),
+      () => {
+        game.present();
+        saveCodes(game.rt);
+      },
     );
     stopPlaying = () => {
       stopLoop();

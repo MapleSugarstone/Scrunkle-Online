@@ -32,7 +32,7 @@ On touch screens a joystick and five buttons appear during play, beside the stag
 
 ### Saves
 
-Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change, and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen, where **Save** shows your code to copy and **Load** takes a code you paste. A loaded code becomes this browser's save. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
+Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change, and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen. **Save** downloads your code as `SRT Executive Showdown save.txt` and still shows it on screen. **Load** asks for a code: paste one, or choose the file button beside the answer box to open a saved `.txt` file. A loaded code becomes this browser's save. Art mode codes download and open the same way, as `SRT Executive Showdown art.txt`. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
 
 ### Replays
 

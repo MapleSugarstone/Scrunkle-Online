@@ -6,6 +6,7 @@ import path from 'node:path';
 import { canon, createPort, digest, fullState, InputTimeline, type Scenario } from './lib/port.ts';
 import { saveSnapshot, loadSnapshot, snapshotFromJson, snapshotToJson, type Snapshot } from '../src/engine/snapshot.ts';
 import { Rng } from '../src/engine/rng.ts';
+import { snapshotHash } from '../src/net/rollback.ts';
 
 const sc: Scenario = JSON.parse(fs.readFileSync(path.resolve(process.argv[2]), 'utf8'));
 const maxBack = Number(process.argv[3] ?? 8);
@@ -15,10 +16,13 @@ straight.greenFlag();
 const tl = new InputTimeline(sc.events);
 const inputs: ReturnType<InputTimeline["inputsFor"]>[] = [];
 const expected: string[] = [];
+// The hash online peers compare also covers what the digest leaves out, such as thread ids.
+const expectedHash: number[] = [];
 for (let f = 1; f <= sc.frames; f++) {
   inputs[f] = tl.inputsFor(f);
   straight.stepFrame(inputs[f]);
   expected[f] = JSON.stringify(digest(fullState(straight)));
+  expectedHash[f] = snapshotHash(saveSnapshot(straight));
 }
 
 /** Prints what differs between a straight run at frame `g` and the given state. */
@@ -81,6 +85,17 @@ while (f < sc.frames) {
       if (d !== expected[g]) {
         console.log(`MISMATCH at frame ${g} replaying from ${target} (rollback ${rollbacks + 1})`);
         explain(g, fullState(rt));
+        process.exit(1);
+      }
+      if (snapshotHash(snaps[g]) !== expectedHash[g]) {
+        const want = createPort(sc.seed);
+        want.greenFlag();
+        for (let h = 1; h <= g; h++) want.stepFrame(inputs[h]);
+        const a = saveSnapshot(want);
+        const b = snaps[g];
+        const fields = (Object.keys(a) as (keyof Snapshot)[]).filter((k) => k !== 'penCmds' && JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+        console.log(`HASH MISMATCH at frame ${g} replaying from ${target} (rollback ${rollbacks + 1}): ${fields.join(', ')}`);
+        for (const k of fields.slice(0, 4)) console.log(`  ${k}: straight ${JSON.stringify(a[k]).slice(0, 200)}\n  ${' '.repeat(k.length)}  rollback ${JSON.stringify(b[k]).slice(0, 200)}`);
         process.exit(1);
       }
     }

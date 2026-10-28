@@ -8,8 +8,8 @@ import { pauseRule } from '../../src/game/pause.ts';
 
 export const T0 = Date.UTC(2026, 10, 1, 12, 0, 0);
 
-export function createPort(seed: number, tickCap = 8, username = ''): Runtime {
-  const rt = new Runtime(modules, skins, { seed, t0: T0, tickCap, pause: pauseRule });
+export function createPort(seed: number, tickCap = 8, username = '', t0 = T0): Runtime {
+  const rt = new Runtime(modules, skins, { seed, t0, tickCap, pause: pauseRule });
   rt.username = username;
   loadSilhouettes(rt);
   rt.logPen = true;

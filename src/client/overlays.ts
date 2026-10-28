@@ -2,11 +2,16 @@
 import type { PauseRule, Runtime } from '../engine/runtime.ts';
 import { STAGE_H, STAGE_W, STAGE_X, STAGE_Y, type Monitors } from '../engine/defs.ts';
 import type { Value } from '../engine/cast.ts';
+import { createElement, FileUp } from 'lucide';
+
+/** The largest text file the question box takes as an answer. */
+const ANSWER_FILE_MAX = 1_000_000;
 
 export class QuestionBox {
   private el: HTMLDivElement;
   private label: HTMLDivElement;
   private input: HTMLInputElement;
+  private fileBtn: HTMLButtonElement;
   private shownFor: unknown = null;
   /** Text submitted since the last frame, taken by the next simulation input. */
   pendingAnswer: string | undefined;
@@ -24,7 +29,25 @@ export class QuestionBox {
     const ok = document.createElement('button');
     ok.textContent = '✔';
     ok.setAttribute('aria-label', 'Submit answer');
-    row.append(this.input, ok);
+    // A text file's contents as the answer, for a game whose questions ask for codes.
+    this.fileBtn = document.createElement('button');
+    this.fileBtn.title = 'Open a .txt file';
+    this.fileBtn.setAttribute('aria-label', 'Open a .txt file');
+    this.fileBtn.append(createElement(FileUp, { width: '1em', height: '1em', 'aria-hidden': 'true' }));
+    this.fileBtn.hidden = true;
+    const pick = document.createElement('input');
+    pick.type = 'file';
+    pick.accept = '.txt,text/plain';
+    pick.hidden = true;
+    this.fileBtn.addEventListener('click', () => pick.click());
+    pick.addEventListener('change', async () => {
+      const file = pick.files?.[0];
+      pick.value = '';
+      if (!file || file.size > ANSWER_FILE_MAX) return;
+      this.pendingAnswer = (await file.text()).replace(/^﻿/, '').trim();
+      this.input.value = '';
+    });
+    row.append(this.input, this.fileBtn, ok, pick);
     this.el.append(this.label, row);
     this.el.hidden = true;
     parent.append(this.el);
@@ -40,6 +63,11 @@ export class QuestionBox {
     this.input.addEventListener('keyup', (e) => e.stopPropagation());
     this.input.addEventListener('focus', () => this.onFocusChange?.(true));
     this.input.addEventListener('blur', () => this.onFocusChange?.(false));
+  }
+
+  /** Shows the button that answers with a text file's contents. */
+  set allowFiles(on: boolean) {
+    this.fileBtn.hidden = !on;
   }
 
   update(rt: Runtime): void {

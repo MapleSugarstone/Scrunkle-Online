@@ -231,6 +231,15 @@ body {
   cursor: pointer;
 }
 
+.question-row button[hidden] {
+  display: none;
+}
+
+.question-row button svg {
+  display: block;
+  margin: auto;
+}
+
 .var-monitor {
   position: absolute;
   display: flex;

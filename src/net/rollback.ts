@@ -6,7 +6,7 @@ import type { PlayerInput } from '../engine/io.ts';
 import { FRAME_MS, type Runtime } from '../engine/runtime.ts';
 import type { SoundEvent } from '../engine/sound-model.ts';
 import { saveSnapshot, loadSnapshot, type Snapshot } from '../engine/snapshot.ts';
-import { decodePacket, encodePacket, Kind, type InputPacket, type Packet } from './wire.ts';
+import { asSent, decodePacket, encodePacket, Kind, type InputPacket, type Packet } from './wire.ts';
 
 export interface Transport {
   /** Sends a packet to one seat; delivery is unreliable and unordered. */
@@ -55,8 +55,9 @@ const EMPTY: PlayerInput = { keys: [] };
 
 /** A stable hash of a snapshot's simulation state. */
 export function snapshotHash(s: Snapshot): number {
-  // The pen array is shared and may have grown since; its length at snapshot time is what counts.
-  const text = JSON.stringify({ ...s, penCmds: s.penLength });
+  // The pen array is shared and may have grown since; its length at snapshot time is what counts. Held keys come from
+  // inputs every peer already agrees on, and leaving them out keeps hashes from before snapshots held them.
+  const text = JSON.stringify({ ...s, penCmds: s.penLength, keys: undefined });
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
@@ -261,7 +262,7 @@ export class RollbackSession {
 
     if (advance) {
       const f = next + this.delay;
-      this.inputs.get(this.local)!.set(f, localInput);
+      this.inputs.get(this.local)!.set(f, asSent(localInput));
       this.lastConf.set(this.local, f);
       this.simulate(next, false);
     } else {

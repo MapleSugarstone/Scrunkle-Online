@@ -3,8 +3,9 @@
 // project's own data on every machine, so all of them start the same, and they never write a save.
 import type { Value } from '../engine/cast.ts';
 import type { Runtime } from '../engine/runtime.ts';
-import { SAVE_LISTS, SAVE_VARS } from '../game/saves.ts';
+import { SAVE_LISTS, SAVE_VARS, shownCode } from '../game/saves.ts';
 import { STORAGE_PREFIX } from '../game/page.ts';
+import { downloadFile, fileName } from './download.ts';
 
 const KEY = `${STORAGE_PREFIX}.save`;
 /** How often a running game's save is written, at most. */
@@ -59,6 +60,22 @@ export function loadSave(rt: Runtime): void {
     const v = save.vars[name];
     if (prop !== undefined && isValue(v)) rt.stage.v[prop] = v;
   }
+}
+
+/**
+ * Downloads each new code the game shows for copying (`shownCode` in src/game/saves.ts) as a text file, and calls
+ * `onSaved` with its name. Returns the check to run after each drawn frame.
+ */
+export function codeFiles(onSaved: (name: string) => void): (rt: Runtime) => void {
+  let last = '';
+  return (rt) => {
+    const shown = shownCode(rt);
+    if (!shown || shown.code === last) return;
+    last = shown.code;
+    const name = fileName(shown.name);
+    downloadFile(new Blob([shown.code], { type: 'text/plain' }), name);
+    onSaved(name);
+  };
 }
 
 /**

@@ -162,6 +162,15 @@ export function decodePacket(buf: ArrayBuffer): Packet | null {
   }
 }
 
+/**
+ * An input as the other players decode it: keys in table order with unknown keys as OTHER_KEY, the pointer in whole
+ * stage units and the answer cut to its sent length. The sender simulates this copy too, so every player runs the same input.
+ */
+export function asSent(inp: PlayerInput): PlayerInput {
+  const p = decodePacket(encodePacket({ kind: Kind.Inputs, from: 0, ack: 0, frame: 0, first: 0, inputs: [inp], checkFrame: 0, checkHash: 0 }));
+  return p?.kind === Kind.Inputs ? p.inputs[0] : { keys: [] };
+}
+
 /** Packs bytes for the text-only room relay. */
 export function toBase64(buf: ArrayBuffer): string {
   const b = new Uint8Array(buf);

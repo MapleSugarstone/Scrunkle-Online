@@ -67,6 +67,8 @@ export interface Snapshot {
   penCreated: boolean;
   monitorVisible: Record<string, boolean>;
   mouse: [number, number, boolean];
+  /** Keys held per player slot after the frame, sorted, which decide whether a key is a new press next frame. */
+  keys: string[][];
   targets: TargetSnap[];
   executable: number[];
   drawList: number[];
@@ -116,6 +118,7 @@ export function saveSnapshot(rt: Runtime): Snapshot {
     penCreated: rt.penCreated,
     monitorVisible: { ...rt.monitorVisible },
     mouse: [rt.io.mouseX, rt.io.mouseY, rt.io.mouseDown],
+    keys: rt.io.keys.map((set) => [...set].sort()),
     targets: rt.targets.map((t) => ({
       id: t.id,
       sprite: t.sprite.index,
@@ -188,6 +191,8 @@ export function loadSnapshot(rt: Runtime, s: Snapshot): void {
   rt.penCreated = s.penCreated;
   rt.monitorVisible = { ...s.monitorVisible };
   [rt.io.mouseX, rt.io.mouseY, rt.io.mouseDown] = s.mouse;
+  // Replays saved before snapshots held keys start with none held.
+  rt.io.keys = rt.io.keys.map((_, p) => new Set(s.keys?.[p] ?? []));
 
   // The pen array is append-only between clears, so truncating it restores the snapshot's view.
   s.penCmds.length = s.penLength;
