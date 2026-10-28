@@ -89,7 +89,7 @@ To deploy the room server:
 | `npm run ref:dump` | Records costume data, vector images and touching masks from the original. |
 | `npm run transpile` | Writes `src/game/generated/` and `src/game/assets-data.json`. |
 | `npm run assets` | Writes `public/assets/`. |
-| `npx tsx tools/hat-anchors.ts [--sheets <dir>]` | Finds the head in every fighter costume and writes `src/game/hat-anchors.json` for **Actually wear hats**. `--sheets` draws each character's costumes with a hat, for checking. |
+| `npx tsx tools/hat-anchors.ts [--sheets <dir>]` | Finds the head in every fighter costume and writes `src/game/hat-anchors.json` for **Actually wear hats**. `--sheets` draws each character's costumes with a hat and numbers them, for checking. Hand fixes go in `tools/hat-fixes.json`. |
 | `npm run typecheck` | Checks the types. |
 | `npm run ref:server` | Keeps the original loaded so parity runs skip its one-minute load. |
 | `npm run test:parity` | Runs every scenario in `tests/scenarios` against the original. |

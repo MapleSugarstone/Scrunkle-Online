@@ -36,8 +36,19 @@ const SETTLE_FILL = 0.6;
  */
 const SINK = 0.45;
 const SINK_RANGE = [0.3, 0.7];
-/** Hat depth in units for characters whose hat rests on top instead: Frank (24) wears it on his shell. */
-const RESTS_ON: Record<string, number> = { '24': 2 };
+
+/**
+ * Hand fixes from reviewing the sheets, in `tools/hat-fixes.json`. A character can set `sink` (units below the top of
+ * the head), `radius` (head radius in units), `dx` and `dy` (units to move its Idle hat point right and up) and `maxTurn`
+ * (degrees either way the hat may turn, 0 for a head that never tilts). A frame
+ * maps to a hat point [x, y, turn, mirrored], to another costume's name to copy, to { dx, dy, turn } to adjust it, or
+ * to { top: sink, wide } to stand the hat upright that many units into the top of the costume's solid shape (see `topOf`).
+ */
+interface Fixes {
+  characters: Record<string, { sink?: number; radius?: number; dx?: number; dy?: number; maxTurn?: number }>;
+  frames: Record<string, number[] | string | { dx?: number; dy?: number; turn?: number; top?: number; wide?: number }>;
+}
+const fixes = JSON.parse(fs.readFileSync(path.join(path.resolve(import.meta.dirname), 'hat-fixes.json'), 'utf8')) as Fixes;
 
 interface SkinDef { w: number; h: number; rcx: number; rcy: number; kind: string; file: string; res: number }
 interface CostumeRef { name: string; skin: number }
@@ -135,10 +146,11 @@ const MIRROR_COST = 0.01;
 const extra = (turn: number, mirror: boolean) => Math.abs(turn) * TURN_COST + (mirror ? MIRROR_COST : 0);
 
 /** The best place for the head disc in a target, as the disc center in level-1 pixels. */
-function search(ref: { coarse: Disc; fine: Disc }, [t1, t2]: [Layer, Layer]): Match {
+function search(ref: { coarse: Disc; fine: Disc }, [t1, t2]: [Layer, Layer], maxTurn = 180): Match {
   const seeds: Match[] = [];
   for (const mirror of [false, true]) {
     for (let turn = -180; turn < 180; turn += COARSE_STEP) {
+      if (Math.abs(turn) > maxTurn) continue;
       const offs = turned(ref.coarse, turn, mirror);
       let best: Match = { x: 0, y: 0, turn, mirror, cost: Infinity };
       for (let y = 0; y < t2.h; y++) for (let x = 0; x < t2.w; x++) {
@@ -157,7 +169,7 @@ function search(ref: { coarse: Disc; fine: Disc }, [t1, t2]: [Layer, Layer]): Ma
     let score = Infinity;
     for (const [span, step, reach] of [[12, 3, 3], [2, 1, 1]] as const) {
       const from = m;
-      for (let turn = from.turn - span; turn <= from.turn + span; turn += step) {
+      for (let turn = Math.max(-maxTurn, from.turn - span); turn <= Math.min(maxTurn, from.turn + span); turn += step) {
         const offs = turned(ref.fine, turn, from.mirror);
         const add = extra(turn, from.mirror);
         for (let y = from.y - reach; y <= from.y + reach; y++) for (let x = from.x - reach; x <= from.x + reach; x++) {
@@ -241,6 +253,32 @@ function headMiddle(l: Layer, x: number, y: number, r: number): number {
   return middles.length ? middles[middles.length >> 1] : x;
 }
 
+/**
+ * The middle of the topmost row where a band as wide as the settle band is solid enough, in pixels, or null. With
+ * `wide` (units), the topmost row with an unbroken solid run that wide instead, so thin strokes above a shape do not count.
+ */
+function topOf(l: Layer, wide = 0): { x: number; y: number } | null {
+  const band = SETTLE_BAND * l.scale, need = SETTLE_FILL * (2 * band + 1);
+  for (let y = 0; y < l.h && wide > 0; y++) {
+    for (let x = 0; x < l.w; x++) {
+      let end = x;
+      while (end < l.w && alphaAt(l, end, y) >= 0.8) end++;
+      if (end - x >= wide * l.scale) return { x: (x + end) / 2, y };
+      x = end;
+    }
+  }
+  for (let y = 0; y < l.h && wide === 0; y++) {
+    const hits: number[] = [];
+    for (let x = 0; x < l.w; x++) {
+      let solid = 0;
+      for (let b = -band; b <= band; b++) if (alphaAt(l, x + b, y) >= 0.8) solid++;
+      if (solid >= need) hits.push(x);
+    }
+    if (hits.length) return { x: (hits[0] + hits[hits.length - 1] + 1) / 2, y };
+  }
+  return null;
+}
+
 /** The hat offsets from the stage's list `#MD_HatOffsets`, by character number. */
 function hatOffsets(): string[] {
   const src = fs.readFileSync(path.join(ROOT, 'src/game/generated/Stage_.ts'), 'utf8');
@@ -260,7 +298,7 @@ for (const c of list) {
   byChar.get(m[1])!.push(c);
 }
 
-interface Cell { img: Image; skin: SkinDef; entry: number[]; cost: number; used: boolean }
+interface Cell { name: string; img: Image; skin: SkinDef; entry: number[]; cost: number; used: boolean }
 
 function anchorsFor(char: string, costumes: CostumeRef[], offsets: string[]): Record<string, number[]> {
   const out: Record<string, number[]> = {};
@@ -268,14 +306,16 @@ function anchorsFor(char: string, costumes: CostumeRef[], offsets: string[]): Re
   if (!refCostume) return out;
   const refSkin = table.skins[refCostume.skin];
   const ref = pyramid(refSkin);
+  const fix = fixes.characters[char] ?? {};
   const p = hatPoint(ref[0], refSkin, HAT_BASE + (Number(offsets[Number(char) - 1]) || 0));
-  const r = headRadius(ref[0], p.x, p.y);
+  const r = fix.radius ?? headRadius(ref[0], p.x, p.y);
   // The hat sits this far below the top of the hair (between the ears), so it rests on the head.
   const top = outline(ref[0], p.x, p.y, 0, -1);
   const hair = top === null ? p.y : p.y - top;
-  if (top !== null) p.y = hair + (RESTS_ON[char] ?? (p.own && top >= SINK_RANGE[0] * r && top <= SINK_RANGE[1] * r ? top : SINK * r));
+  if (top !== null) p.y = hair + (fix.sink ?? (p.own && top >= SINK_RANGE[0] * r && top <= SINK_RANGE[1] * r ? top : SINK * r));
   // The game's hat point is the costume's rotation center, which is off the head's middle in a three-quarter view.
-  p.x = headMiddle(ref[0], p.x, p.y, r);
+  p.x = headMiddle(ref[0], p.x, p.y, r) + (fix.dx ?? 0);
+  p.y -= fix.dy ?? 0;
   // The disc holds the head and a little of the air above it.
   const cx = p.x, cy = hair + r * 0.85;
   const discs = { coarse: disc(ref[1], cx / 2, cy / 2, r / 2), fine: disc(ref[0], cx, cy, r) };
@@ -288,7 +328,7 @@ function anchorsFor(char: string, costumes: CostumeRef[], offsets: string[]): Re
     const skin = table.skins[c.skin];
     if (skin.kind !== 'bitmap') continue;
     const layers = c === refCostume ? ref : pyramid(skin);
-    const m = c === refCostume ? { x: cx, y: cy, turn: 0, mirror: false, cost: 0 } : search(discs, layers);
+    const m = c === refCostume ? { x: cx, y: cy, turn: 0, mirror: false, cost: 0 } : search(discs, layers, fix.maxTurn);
     const a = (m.turn * Math.PI) / 180, hx = (m.mirror ? -1 : 1) * fromCenter.x, hy = fromCenter.y;
     let px = m.x + hx * Math.cos(a) - hy * Math.sin(a), py = m.y + hx * Math.sin(a) + hy * Math.cos(a);
     const ux = Math.sin(a), uy = -Math.cos(a);
@@ -301,7 +341,7 @@ function anchorsFor(char: string, costumes: CostumeRef[], offsets: string[]): Re
     const entry = [round(px - skin.rcx), round(skin.rcy - py), Math.round(((m.turn + 540) % 360) - 180), m.mirror ? 1 : 0];
     matched.set(c.name, { entry, cost: m.cost });
     if (process.env.HAT_COSTS) console.log(`${c.name} ${m.cost.toFixed(3)} ${entry.join(' ')}`);
-    if (sheets) cells.set(c.name, { img: loadImage(skin), skin, entry, cost: m.cost, used: true });
+    if (sheets) cells.set(c.name, { name: c.name, img: loadImage(skin), skin, entry, cost: m.cost, used: true });
   }
   // A frame with no head to find, such as a spin, takes the hat point of the frame from the same move whose name
   // shares the longest start with its own.
@@ -324,6 +364,20 @@ function anchorsFor(char: string, costumes: CostumeRef[], offsets: string[]): Re
     const cell = cells.get(name);
     if (cell) Object.assign(cell, { entry: out[name], used: false });
   }
+  for (const name of Object.keys(out)) {
+    const f = fixes.frames[name];
+    if (f === undefined) continue;
+    const [x, y, turn, mirror] = out[name];
+    if (typeof f === 'string') out[name] = [...(out[f] ?? out[name])];
+    else if (Array.isArray(f)) out[name] = f;
+    else if (f.top !== undefined) {
+      const skin = table.skins[costumes.find((c) => c.name === name)!.skin];
+      const t = topOf(pyramid(skin)[0], f.wide);
+      out[name] = t ? [round(t.x - skin.rcx + (f.dx ?? 0)), round(skin.rcy - t.y - f.top + (f.dy ?? 0)), f.turn ?? 0, 0] : out[name];
+    } else out[name] = [round(x + (f.dx ?? 0)), round(y + (f.dy ?? 0)), turn + (f.turn ?? 0), mirror];
+    const cell = cells.get(name);
+    if (cell) cell.entry = out[name];
+  }
   if (sheets) writeSheet(path.resolve(sheets, `${char}.png`), [...cells.values()]);
   console.log(`${char}: ${costumes.length} costumes, ${used} matched; hat point ${p.own ? 'from the game' : 'found'}, head radius ${r.toFixed(1)}`);
   return out;
@@ -333,8 +387,20 @@ function round(v: number): number {
   return Math.round(v * 10) / 10;
 }
 
-/** Every costume with hat 1 drawn where the match puts it, and the match cost as a bar, red when the match is not used. */
+const DIGITS = [
+  ['111', '101', '101', '101', '111'], ['010', '110', '010', '010', '111'], ['111', '001', '111', '100', '111'],
+  ['111', '001', '111', '001', '111'], ['101', '101', '111', '001', '001'], ['111', '100', '111', '001', '111'],
+  ['111', '100', '111', '101', '111'], ['111', '001', '001', '001', '001'], ['111', '101', '111', '101', '111'],
+  ['111', '101', '111', '001', '111'],
+];
+
+/**
+ * Every costume with hat 1 drawn where the match puts it, its number, and the match cost as a bar, red when the match
+ * is not used. A text file beside the sheet names each numbered costume.
+ */
 function writeSheet(file: string, cells: Cell[]): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file.replace(/\.png$/, '.txt'), cells.map((c, k) => `${k} ${c.name} ${c.entry.join(' ')} ${c.cost.toFixed(3)}`).join('\n') + '\n');
   const hatSkin = table.skins[list!.find((c) => c.name === 'hat1')!.skin];
   const hat = loadImage(hatSkin);
   const CW = 300, CH = 260, cols = 8;
@@ -369,8 +435,12 @@ function writeSheet(file: string, cells: Cell[]): void {
       const i = (iy * hat.w + ix) * 4;
       put(ox + (px + x) * s, oy + (py + y) * s, hat.data[i], hat.data[i + 1], hat.data[i + 2], hat.data[i + 3] * 0.85);
     }
-    const bar = Math.min(CW - 20, Math.round((c.cost / MAX_COST) * 100));
-    for (let x = 0; x < bar; x++) for (let y = 0; y < 6; y++) put(ox + x, oy - 20 + y, c.used ? 40 : 230, c.used ? 160 : 30, 40, 255);
+    const bar = Math.min(CW - 140, Math.round((c.cost / MAX_COST) * 100));
+    for (let x = 0; x < bar; x++) for (let y = 0; y < 6; y++) put(ox + 40 + x, oy - 20 + y, c.used ? 40 : 230, c.used ? 160 : 30, 40, 255);
+    // The cell's number in the sheet's list of costume names, in a 3 by 5 pixel font drawn 3 times as large.
+    [...String(k)].forEach((d, n) => DIGITS[Number(d)].forEach((row, y) => [...row].forEach((bit, x) => {
+      if (bit === '1') for (let sy = 0; sy < 3; sy++) for (let sx = 0; sx < 3; sx++) put(ox + n * 12 + x * 3 + sx, oy - 26 + y * 3 + sy, 0, 0, 0, 255);
+    })));
   });
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, writePng(out));
