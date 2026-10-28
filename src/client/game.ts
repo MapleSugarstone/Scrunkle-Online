@@ -7,7 +7,7 @@ import { installSilhouettes } from '../game/silhouettes.ts';
 import { decodeMaskSet, type MaskSet } from '../engine/masks.ts';
 import maskUrl from '../game/masks.bin?url';
 import { pauseRule } from '../game/pause.ts';
-import { CODE_ANSWERS } from '../game/saves.ts';
+import { CODE_ANSWERS, HIDDEN_LISTS } from '../game/saves.ts';
 import { WebGLRenderer } from '../render/webgl.ts';
 import { EFFECT_BITS } from '../render/shaders.ts';
 import { AudioOut } from './audio.ts';
@@ -70,7 +70,8 @@ export class Game {
     this.audio = new AudioOut();
     this.question = new QuestionBox(overlay);
     this.question.allowFiles = CODE_ANSWERS;
-    this.lists = new ListMonitors(overlay, monitors);
+    const hidden = new Set(HIDDEN_LISTS.map((name) => this.rt.stage.sprite.def.listNames?.[name]));
+    this.lists = new ListMonitors(overlay, { ...monitors, lists: monitors.lists.filter((d) => !hidden.has(d.prop)) });
     this.vars = new VarMonitors(overlay, monitors);
     this.bubbles = new Bubbles(overlay);
     this.pause = pauseRule ? new PauseMenu(overlay, pauseRule) : null;
@@ -79,6 +80,7 @@ export class Game {
   /** A runtime with the masks installed and the green flag clicked. The masks must have loaded. */
   static createRuntime(opts: GameOptions): Runtime {
     const rt = new Runtime(modules, skins, { seed: opts.seed, t0: opts.t0, pause: pauseRule });
+    rt.stampOwners = new WeakMap();
     if (masks) installSilhouettes(rt, masks);
     rt.greenFlag();
     return rt;

@@ -127,6 +127,8 @@ export interface LobbyHandlers {
   recordVideo(id: string, quality: VideoQuality): void;
   /** The player asked for the next display mode. */
   nextDisplay(): void;
+  /** The player switched "Actually wear hats" on or off. */
+  wearHats(on: boolean): void;
 }
 
 export class Lobby {
@@ -172,6 +174,8 @@ export class Lobby {
   private replaysBtn: HTMLButtonElement;
   private replayList: HTMLUListElement;
   private displayBtn: HTMLButtonElement;
+  private hatsBtn: HTMLButtonElement;
+  private hatsOn = false;
   private noticeView: HTMLDivElement;
   /** The Host or Join waiting for the player to accept the online notice. */
   private afterNotice: (() => void) | null = null;
@@ -369,10 +373,14 @@ export class Lobby {
     this.displayBtn.title = 'F2: next display mode';
     this.displayBtn.addEventListener('click', () => this.h.nextDisplay());
     this.setDisplay('smooth');
+    this.hatsBtn = el('button', 'lobby-option');
+    this.hatsBtn.title = "Each fighter's hat sits on its head and turns with it";
+    this.hatsBtn.addEventListener('click', () => this.h.wearHats(!this.hatsOn));
+    this.setWearHats(false);
     // The footer keeps these out of the panel's way on short screens.
     const footer = el('div', 'lobby-footer');
     const left = el('div', 'lobby-footer-left');
-    left.append(this.replaysBtn, this.touchBtn, this.displayBtn);
+    left.append(this.replaysBtn, this.touchBtn, this.displayBtn, this.hatsBtn);
     void this.refreshReplays();
     footer.append(left, this.controlsBtn);
     this.root.append(panel, footer);
@@ -469,6 +477,7 @@ export class Lobby {
     this.touchBtn.hidden = view !== 'menu';
     this.replaysBtn.hidden = view !== 'menu';
     this.displayBtn.hidden = view !== 'menu';
+    this.hatsBtn.hidden = view !== 'menu';
     this.controlsBtn.hidden = view === 'controls' || view === 'replays' || view === 'notice';
     this.root.classList.toggle('in-room', view === 'room');
   }
@@ -661,6 +670,11 @@ export class Lobby {
   setDisplay(mode: DisplayMode): void {
     const state = el('span', `lobby-option-state${mode === 'smooth' ? '' : ' on'}`, DISPLAY_NAMES[mode]);
     this.displayBtn.replaceChildren(el('span', 'lobby-option-label', 'Display'), state);
+  }
+
+  setWearHats(on: boolean): void {
+    this.hatsOn = on;
+    renderOption(this.hatsBtn, 'Actually wear hats', on);
   }
 
   /** Picks the first touch button of a swap, or swaps its action with the one picked before. */

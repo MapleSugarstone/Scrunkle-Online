@@ -962,6 +962,9 @@ export class Runtime {
   /** The color a sprite and its pen stamps are painted in, from game state, or null. Only drawing reads it. */
   tintOf: ((t: Target) => Tint | null) | null = null;
 
+  /** The target that made each pen stamp, kept only when the page sets it. Only drawing reads it. */
+  stampOwners: WeakMap<PenCmd, Target> | null = null;
+
   // ---------------------------------------------------------------- operators
 
   pickRandom(from: Value, to: Value): number {
@@ -1023,6 +1026,7 @@ export class Runtime {
       // The renderer works out the costume box itself; the hull box needs the simulation's hull state.
       if (t.hullClean) cmd.clip = clip;
       this.pen.cmds.push(cmd);
+      this.stampOwners?.set(cmd, t);
       if (this.logPen) this.frameLog.pen.push(stampLog(this, t, cmd));
     }
     this.requestRedraw();

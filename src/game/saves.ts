@@ -16,6 +16,12 @@ export const SAVE_VARS: string[] = [];
 /** The game asks only for save and art codes, so the question box also takes a text file as the answer. */
 export const CODE_ANSWERS = true;
 
+/**
+ * Stage lists whose monitors the page never draws. The save screen shows the raw save and the code to copy, and
+ * Save downloads the code as a file instead.
+ */
+export const HIDDEN_LISTS = ['!SAVE_DATA', 'Save Code'];
+
 function stageList(rt: Runtime, name: string): { items: Value[]; visible: boolean } | null {
   const prop = rt.stage.sprite.def.listNames?.[name];
   if (prop === undefined) return null;

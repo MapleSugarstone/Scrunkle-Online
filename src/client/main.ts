@@ -10,7 +10,8 @@ import { ReplayOffer } from './replay-offer.ts';
 import { loadReplay } from './replay-store.ts';
 import { runReplayViewer, videoType, type VideoOptions, type VideoQuality } from './replay-viewer.ts';
 import { codeFiles, keepSaving, loadSave } from './saves.ts';
-import { DISPLAY_NAMES, loadDisplay, nextDisplay, saveDisplay } from './display.ts';
+import { DISPLAY_NAMES, loadDisplay, loadWearHats, nextDisplay, saveDisplay, saveWearHats } from './display.ts';
+import { wearHats } from '../game/hats.ts';
 import { Toast } from './toast.ts';
 import { actionKeys, Pads } from './pads.ts';
 import { TouchControls } from './touch.ts';
@@ -245,6 +246,9 @@ const lobby = new Lobby(overlay, {
   nextDisplay() {
     setDisplay(nextDisplay(display));
   },
+  wearHats(on) {
+    setWearHats(on);
+  },
 });
 touch.onChange = (on) => lobby.setTouch(on);
 
@@ -258,6 +262,13 @@ function setDisplay(mode: typeof display, announce = false): void {
   if (announce) toast.show(`Display: ${DISPLAY_NAMES[mode]}`, 1500);
 }
 setDisplay(display);
+function setWearHats(on: boolean): void {
+  saveWearHats(on);
+  game.renderer.setPenView(on ? wearHats : null);
+  lobby.setWearHats(on);
+  game.present();
+}
+setWearHats(loadWearHats());
 // F2 works on every screen, so the capture phase sees it before the lobby keeps keys to itself.
 window.addEventListener(
   'keydown',

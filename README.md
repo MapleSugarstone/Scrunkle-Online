@@ -30,9 +30,11 @@ On touch screens a joystick and five buttons appear during play, beside the stag
 
 **Display** on the start screen picks how the stage is drawn, and F2 picks the next mode at any time. **Smooth** draws at your screen's resolution. **Old flash game** draws at half the stage's size, dithers the picture to 256 colors and enlarges it. **Handheld** draws on a grid three quarters of the stage's size, turns every vector costume into a bitmap at that same scale, draws every costume with hard pixel edges and enlarges the result. The mode changes only the picture, so online players can each use a different one.
 
+**Actually wear hats** on the start screen draws each fighter's hat on the fighter's head in every animation frame. The hat turns and flips with the fighter, gets the fighter's white outline, and is drawn with the fighter, so the other fighter can stand in front of it. Like **Display**, it changes only the picture.
+
 ### Saves
 
-Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change, and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen. **Save** downloads your code as `SRT Executive Showdown save.txt` and still shows it on screen. **Load** asks for a code: paste one, or choose the file button beside the answer box to open a saved `.txt` file. A loaded code becomes this browser's save. Art mode codes download and open the same way, as `SRT Executive Showdown art.txt`. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
+Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change, and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen. **Save** downloads your code as `SRT Executive Showdown save.txt`. **Load** asks for a code: paste one, or choose the file button beside the answer box to open a saved `.txt` file. A loaded code becomes this browser's save. Art mode codes download and open the same way, as `SRT Executive Showdown art.txt`. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
 
 ### Replays
 
@@ -87,6 +89,7 @@ To deploy the room server:
 | `npm run ref:dump` | Records costume data, vector images and touching masks from the original. |
 | `npm run transpile` | Writes `src/game/generated/` and `src/game/assets-data.json`. |
 | `npm run assets` | Writes `public/assets/`. |
+| `npx tsx tools/hat-anchors.ts [--sheets <dir>]` | Finds the head in every fighter costume and writes `src/game/hat-anchors.json` for **Actually wear hats**. `--sheets` draws each character's costumes with a hat, for checking. |
 | `npm run typecheck` | Checks the types. |
 | `npm run ref:server` | Keeps the original loaded so parity runs skip its one-minute load. |
 | `npm run test:parity` | Runs every scenario in `tests/scenarios` against the original. |

@@ -23,6 +23,9 @@ const HANDHELD_LEVEL = -1;
  */
 export type DisplayMode = 'smooth' | 'flash' | 'handheld';
 
+/** The pen commands from `from` on, in the order and form to draw them, for an option that changes only the picture. */
+export type PenView = (rt: Runtime, cmds: readonly PenCmd[], from: number) => readonly PenCmd[];
+
 /** An offscreen image the display modes draw into. */
 interface Target {
   tex: WebGLTexture;
@@ -104,6 +107,7 @@ export class WebGLRenderer {
    */
   smoothSkins = new Set<number>();
   private smoothed = new Map<number, { x: number; y: number }>();
+  private penView: PenView | null = null;
   /** Skins of stamps on the pen layer that drew nothing because their images had not loaded. */
   private penMissing = new Set<number>();
   private penArr: PenCmd[] | null = null;
@@ -498,7 +502,11 @@ export class WebGLRenderer {
       this.penEpoch = rt.penEpoch;
       this.penMissing.clear();
     }
-    for (let i = this.penDrawn; i < cmds.length; i++) this.drawPenCmd(cmds[i]);
+    if (this.penView) {
+      if (this.penDrawn < cmds.length) for (const cmd of this.penView(rt, cmds, this.penDrawn)) this.drawPenCmd(cmd);
+    } else {
+      for (let i = this.penDrawn; i < cmds.length; i++) this.drawPenCmd(cmds[i]);
+    }
     this.penDrawn = cmds.length;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
@@ -532,6 +540,12 @@ export class WebGLRenderer {
   }
 
   private stageProj = ortho(-NATIVE_W / 2, NATIVE_W / 2, -NATIVE_H / 2, NATIVE_H / 2);
+
+  /** Draws the pen layer through `view` from now on, or straight from the commands with null, and redraws it. */
+  setPenView(view: PenView | null): void {
+    this.penView = view;
+    this.penArr = null;
+  }
 
   /** Changes how the stage reaches the screen. The pen layer redraws under the new mode's costume rules. */
   setDisplay(mode: DisplayMode): void {
