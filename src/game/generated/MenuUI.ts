@@ -202,6 +202,7 @@ export const def: SpriteDef = {
     "el": "el",
     "scrollbar": "scrollbar",
   },
+  fixedLists: ["baahh_cards","percentages_cane","excused","z_allowedboss","couponslegendary","blcard","clearbar","el","scrollbar"],
   costumes: costumes(8),
   sounds: sounds(8),
   scripts: [],

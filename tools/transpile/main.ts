@@ -5,6 +5,7 @@ import path from 'node:path';
 import { parseProject, sanitize } from './ir.ts';
 import { analyze, SpriteGen } from './gen.ts';
 import { applyOverrides, readOverrides } from '../lib/lists.ts';
+import { SAVE_LISTS } from '../../src/game/saves.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const project = JSON.parse(fs.readFileSync(path.join(ROOT, 'sb3/project.json'), 'utf8'));
@@ -18,6 +19,17 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const targets = parseProject(project);
 const stage = targets.find((t) => t.isStage)!;
+
+// Lists some block writes, by id. The page also writes the saved lists, so those count as written too.
+const LIST_WRITES = new Set(['data_addtolist', 'data_deleteoflist', 'data_deletealloflist', 'data_insertatlist', 'data_replaceitemoflist']);
+const writtenLists = new Set<string>();
+for (const t of project.targets) {
+  for (const b of Object.values(t.blocks) as any[]) if (b && LIST_WRITES.has(b.opcode) && b.fields?.LIST) writtenLists.add(b.fields.LIST[1]);
+}
+for (const name of SAVE_LISTS) {
+  const decl = stage.lists.find((l) => l.name === name);
+  if (decl) writtenLists.add(decl.id);
+}
 const usedFiles = new Set<string>(['index', 'Stage_']);
 const files: string[] = [];
 let errors = 0;
@@ -26,6 +38,7 @@ for (const t of targets) {
   const an = analyze(t);
   for (const w of an.warnings) console.warn(`[warn] ${w}`);
   const gen = new SpriteGen(t, stage, an);
+  gen.fixedLists = t.lists.filter((l) => !writtenLists.has(l.id)).map((l) => l.prop);
   const code = gen.generate();
   for (const e of gen.errors) {
     console.error(`[error] ${t.name}: ${e}`);

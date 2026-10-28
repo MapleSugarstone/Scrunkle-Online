@@ -83,6 +83,7 @@ export const def: SpriteDef = {
     "mike list": "mike_list",
     "averages": "averages",
   },
+  fixedLists: [],
   costumes: costumes(14),
   sounds: sounds(14),
   scripts: [],

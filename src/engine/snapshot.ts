@@ -78,9 +78,13 @@ export interface Snapshot {
   players: PlayerSnap[][];
 }
 
-function copyLists(l: Record<string, Value[]>): Record<string, Value[]> {
+/** Copies a target's lists. Fixed lists never change, so the copy shares them, frozen as the runtime keeps them. */
+function copyLists(l: Record<string, Value[]>, fixed: Set<string>): Record<string, Value[]> {
   const out: Record<string, Value[]> = {};
-  for (const k in l) out[k] = l[k].slice();
+  for (const k in l) {
+    const v = l[k];
+    out[k] = !fixed.has(k) ? v.slice() : Object.isFrozen(v) ? v : (Object.freeze(v.slice()) as Value[]);
+  }
   return out;
 }
 
@@ -138,7 +142,7 @@ export function saveSnapshot(rt: Runtime): Snapshot {
       hullClean: t.hullClean,
       edgeValues: [...t.edgeValues],
       v: { ...t.v },
-      l: copyLists(t.l),
+      l: copyLists(t.l, t.sprite.fixedLists),
       pen: t.pen ? { ...t.pen, c4: [...t.pen.c4] as PenState['c4'] } : null,
       snd: t.snd ? { ...t.snd } : null,
       waitingSounds: [...t.waitingSounds],
@@ -222,7 +226,7 @@ export function loadSnapshot(rt: Runtime, s: Snapshot): void {
     t.hullClean = ts.hullClean;
     t.edgeValues = new Map(ts.edgeValues);
     t.v = { ...ts.v };
-    t.l = copyLists(ts.l);
+    t.l = copyLists(ts.l, sprite.fixedLists);
     t.pen = ts.pen ? { ...ts.pen, c4: [...ts.pen.c4] as PenState['c4'] } : null;
     t.snd = ts.snd ? { ...ts.snd } : null;
     t.waitingSounds = new Set(ts.waitingSounds);

@@ -20,7 +20,7 @@ const page = await browser.newPage({ viewport: { width: STAGE_W + 40, height: ST
 page.on('pageerror', (e) => console.error('[port pageerror]', e.message));
 await page.goto(`${vite.resolvedUrls!.local[0]}test.html`);
 await page.waitForFunction(() => document.body.dataset.ready === '1', null, { timeout: 120_000 });
-await page.evaluate(([s, t0]) => (window as any).PORT.init(s, t0, STAGE_W, STAGE_H), [sc, T0] as const);
+await page.evaluate(([s, t0, w, h]) => (window as any).PORT.init(s, t0, w, h), [sc, T0, STAGE_W, STAGE_H] as const);
 const shots: Record<number, string> = await page.evaluate(([n, at]) => (window as any).PORT.run(n, at), [shotAt[shotAt.length - 1], shotAt] as const);
 for (const [f, data] of Object.entries(shots)) fs.writeFileSync(path.join(out, `port-${String(f).padStart(5, '0')}.png`), Buffer.from(data.split(',')[1], 'base64'));
 console.log(`saved ${Object.keys(shots).length} frames to ${path.relative(ROOT, out)}`);

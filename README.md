@@ -91,9 +91,11 @@ To deploy the room server:
 | `npm run ref:server` | Keeps the original loaded so parity runs skip its one-minute load. |
 | `npm run test:parity` | Runs every scenario in `tests/scenarios` against the original. |
 | `npx tsx tools/parity.ts <scenario>` | Compares the port with the original frame by frame and stops at the first difference. |
-| `npm run test:rollback` | Restores random earlier snapshots and checks that the replay matches a straight run. |
+| `npm run test:rollback` | Restores random earlier snapshots and checks that the re-simulated frames match a straight run, in the parity digest and in the hash online players compare. |
 | `npm run test:net` | Plays two simulated peers with latency, jitter and packet loss and checks they agree. Add `-- --replay` to record each peer's replays as an online page does and play them back. |
 | `npx tsx tools/replay-test.ts <scenario>` | Records the matches in a scenario as replays and checks that each plays back the same. |
+| `npx tsx tools/replay-check.ts <file>` | Plays a saved `.meow` file back and checks its state hashes, to tell which player's game diverged in a desync. |
+| `npx tsx tools/replay-perf.ts <file>` | Times a saved replay's frames, snapshot saves and loads, and lists the slowest frames. |
 | `npm run test:math` | Checks the portable math functions bit for bit. |
 | `bash tools/record-suite.sh` | Records the parity scenarios again by driving the port through the menus. |
 | `npx tsx tools/drive.ts "<tokens>" <name>` | Plays the port with a token script and saves the input as a scenario. The tokens are listed at the top of the file. |

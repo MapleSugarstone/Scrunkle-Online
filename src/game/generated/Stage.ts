@@ -67,6 +67,7 @@ export const def: SpriteDef = {
   listNames: {
     "genmap": "genmap",
   },
+  fixedLists: [],
   costumes: costumes(4),
   sounds: sounds(4),
   scripts: [],

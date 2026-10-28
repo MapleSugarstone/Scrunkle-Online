@@ -183,7 +183,7 @@ export class Runtime {
     t.updateDrawPosition(t.x, t.y);
     t.v = { ...d.vars };
     t.l = {};
-    for (const k of Object.keys(d.lists)) t.l[k] = d.lists[k].slice();
+    for (const k of Object.keys(d.lists)) t.l[k] = sprite.fixedLists.has(k) ? Object.freeze(d.lists[k].slice()) : d.lists[k].slice();
     sprite.clones.push(t);
     sprite.original = t;
     return t;
@@ -262,7 +262,8 @@ export class Runtime {
     for (const [target, id, items] of inputs[0]?.lists ?? []) {
       const t = target === 'Stage' ? this.stage : this.getSpriteTargetByName(target);
       const prop = t && Object.entries(t.sprite.def.listIds).find(([, v]) => v === id)?.[0];
-      if (t && prop) t.l[prop].splice(0, t.l[prop].length, ...items);
+      // A new array, because snapshots may share the old one.
+      if (t && prop) t.l[prop] = t.sprite.fixedLists.has(prop) ? Object.freeze([...items]) : [...items];
     }
   }
 
@@ -544,8 +545,18 @@ export class Runtime {
 
   // ---------------------------------------------------------------- hats and broadcasts
 
+  /** Broadcast and key hat names any sprite listens for, by kind, made on first use. */
+  private listened: Record<'broadcast' | 'key', Set<string>> | null = null;
+
   startHats(kind: HatKind, msg: string | null, optTarget?: Target): Thread[] {
     const started: Thread[] = [];
+    if (kind === 'broadcast' || kind === 'key') {
+      this.listened ??= {
+        broadcast: new Set(this.sprites.flatMap((s) => [...s.broadcastScripts.keys()])),
+        key: new Set(this.sprites.flatMap((s) => [...s.keyScripts.keys()])),
+      };
+      if (!this.listened[kind].has(msg!)) return started;
+    }
     const targets = optTarget ? [optTarget] : this.executable;
     for (let i = targets.length - 1; i >= 0; i--) {
       const t = targets[i];
@@ -719,7 +730,7 @@ export class Runtime {
     c.updateDrawPosition(c.x, c.y);
     c.v = { ...source.v };
     c.l = {};
-    for (const k of Object.keys(source.l)) c.l[k] = source.l[k].slice();
+    for (const k of Object.keys(source.l)) c.l[k] = sprite.fixedLists.has(k) ? source.l[k] : source.l[k].slice();
     this.drawList.push(c);
     this.startHats('clone', null, c);
     if (c.visible) this.requestRedraw();
@@ -1161,6 +1172,7 @@ export class Runtime {
   private syncSoundEffects(t: Target): void {
     t.soundState();
     const si = t.sprite.index;
+    if (!this.players[si].some((p) => p.order >= 0 && p.owner === t)) return;
     for (const idx of this.bankOrder(si)) if (this.players[si][idx].owner === t) this.applySoundEffects(si, idx, t);
   }
 

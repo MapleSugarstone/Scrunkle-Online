@@ -1,7 +1,7 @@
 // Simulated network test for the rollback session: two peers on one virtual clock with latency,
 // jitter, loss and clock drift. Each peer plays its seat's keys from a recorded scenario, and the
 // test checks both end in the same state.
-// Usage: npx tsx tools/netsim.ts [peers] [frames] [latencyMs] [jitterMs] [loss] [dropAt] [scenario]
+// Usage: npx tsx tools/netsim.ts [peers] [frames] [latencyMs] [jitterMs] [loss] [dropAt] [scenario] [delayFrames]
 import fs from 'node:fs';
 import path from 'node:path';
 import { createPort, InputTimeline, T0, type Scenario } from './lib/port.ts';
@@ -19,6 +19,8 @@ const latency = Number(process.argv[4] ?? 60);
 const jitter = Number(process.argv[5] ?? 20);
 const loss = Number(process.argv[6] ?? 0.05);
 const scenarioFile = process.argv[8] ?? 'tests/scenarios/versus.json';
+/** Input delay in frames. The lobby starts at 1. */
+const inputDelay = Number(process.argv.slice(9).find((a) => !a.startsWith('--')) ?? 2);
 const scenario: Scenario = JSON.parse(fs.readFileSync(path.resolve(scenarioFile), 'utf8'));
 const seed = scenario.seed;
 const FRAME = 1000 / 30;
@@ -69,7 +71,7 @@ const sessions = seats.map((seat) => {
     rt,
     local: seat,
     seats,
-    delay: 2,
+    delay: inputDelay,
     maxPrediction: 10,
     now: () => now,
     transport: {

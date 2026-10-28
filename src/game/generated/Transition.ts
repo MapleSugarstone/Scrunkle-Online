@@ -51,6 +51,7 @@ export const def: SpriteDef = {
   listNames: {
 
   },
+  fixedLists: [],
   costumes: costumes(9),
   sounds: sounds(9),
   scripts: [],

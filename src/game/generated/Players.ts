@@ -282,6 +282,7 @@ export const def: SpriteDef = {
     "command": "command",
     "crouch states": "crouch_states",
   },
+  fixedLists: ["cpu_stuff","shield_length","cpu_dash_states","crouch_states"],
   costumes: costumes(2),
   sounds: sounds(2),
   scripts: [],

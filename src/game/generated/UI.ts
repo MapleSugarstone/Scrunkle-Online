@@ -127,6 +127,7 @@ export const def: SpriteDef = {
     "1": "_1",
     "herbivores": "herbivores",
   },
+  fixedLists: ["legendgrenadeslol","rampage_time","streamerstates","_1","herbivores"],
   costumes: costumes(7),
   sounds: sounds(7),
   scripts: [],

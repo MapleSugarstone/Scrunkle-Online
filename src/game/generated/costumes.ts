@@ -188,6 +188,7 @@ export const def: SpriteDef = {
     "!Local_Return2": "Local_Return2",
     "super frames": "super_frames",
   },
+  fixedLists: ["dashable_states","super_frames"],
   costumes: costumes(3),
   sounds: sounds(3),
   scripts: [],

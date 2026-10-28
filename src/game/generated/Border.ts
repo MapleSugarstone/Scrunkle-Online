@@ -59,6 +59,7 @@ export const def: SpriteDef = {
     "!Input Delay": "Input_Delay",
     "!input Delay 2": "input_Delay_2",
   },
+  fixedLists: [],
   costumes: costumes(11),
   sounds: sounds(11),
   scripts: [],

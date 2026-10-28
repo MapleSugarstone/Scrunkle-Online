@@ -326,6 +326,8 @@ export class SpriteGen {
   out: string[] = [];
   counter = 0;
   errors: string[] = [];
+  /** Property names of this target's lists that no block writes. */
+  fixedLists: string[] = [];
 
   constructor(t: TargetIR, stage: TargetIR, an: Analysis) {
     this.t = t;
@@ -1239,6 +1241,7 @@ ${t.lists.map((v) => `    ${v.prop}: ${JSON.stringify(v.id)},`).join('\n')}
   listNames: {
 ${t.lists.filter((v, i) => t.lists.findIndex((x) => x.name === v.name) === i).map((v) => `    ${JSON.stringify(v.name)}: ${JSON.stringify(v.prop)},`).join('\n')}
   },
+  fixedLists: ${JSON.stringify(this.fixedLists)},
   costumes: costumes(${t.index}),
   sounds: sounds(${t.index}),
   scripts: [],

@@ -106,6 +106,8 @@ export interface SpriteDef {
   listIds: Record<string, string>;
   /** Original list name to property name, for TypeScript that reads lists by name. */
   listNames?: Record<string, string>;
+  /** Property names of lists no block writes. Clones and snapshots share them instead of copying them. */
+  fixedLists?: string[];
   costumes: CostumeDef[];
   sounds: SoundDef[];
   scripts: ScriptDef[];

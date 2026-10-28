@@ -56,10 +56,13 @@ export class Sprite {
   /** The target loaded from the project file; it is never deleted. */
   original!: Target;
   index: number;
+  /** Lists no block writes, by property name. They stay frozen, so clones and snapshots can share them. */
+  fixedLists: Set<string>;
 
   constructor(def: SpriteDef, index: number) {
     this.def = def;
     this.index = index;
+    this.fixedLists = new Set(def.fixedLists ?? []);
     this.name = def.name;
     this.costumes = def.costumes;
     this.sounds = def.sounds;

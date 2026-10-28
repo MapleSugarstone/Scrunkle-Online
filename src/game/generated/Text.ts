@@ -184,6 +184,7 @@ export const def: SpriteDef = {
     "back": "back",
     "data-campaigndisc": "data_campaigndisc",
   },
+  fixedLists: ["blacklistcharacter","Num_DATA_abbreiations","arrows","DATA_Presets","gamemodes","brasi","names","catgomeow","tutor_stages","a","phase","data_menusubtext","rrare","back","data_campaigndisc"],
   costumes: costumes(10),
   sounds: sounds(10),
   scripts: [],

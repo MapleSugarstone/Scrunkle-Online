@@ -75,6 +75,7 @@ export const def: SpriteDef = {
     "!DATA_Cutscene": "DATA_Cutscene",
     "!DATA_frameBGs": "DATA_frameBGs",
   },
+  fixedLists: ["DATA_Cutscene","DATA_frameBGs"],
   costumes: costumes(12),
   sounds: sounds(12),
   scripts: [],

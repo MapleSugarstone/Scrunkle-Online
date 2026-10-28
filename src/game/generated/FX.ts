@@ -233,6 +233,7 @@ export const def: SpriteDef = {
     "talkingben": "talkingben",
     "!DATA_BlacklistedFX": "DATA_BlacklistedFX",
   },
+  fixedLists: ["priority_layer","DATA_GenericParticle","DATA_RNG_rotate","DATA_offset","DATA_Turnplayer","wow","talkingben","DATA_BlacklistedFX"],
   costumes: costumes(6),
   sounds: sounds(6),
   scripts: [],

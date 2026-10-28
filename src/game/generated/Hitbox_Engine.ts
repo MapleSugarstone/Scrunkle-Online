@@ -423,6 +423,7 @@ export const def: SpriteDef = {
     "krisp states": "krisp_states",
     "photo": "photo",
   },
+  fixedLists: ["boingy","cats","animal","falled","gset","krisp_states"],
   costumes: costumes(5),
   sounds: sounds(5),
   scripts: [],

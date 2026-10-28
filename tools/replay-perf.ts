@@ -38,3 +38,5 @@ console.log(`${meta.fighters.join(' vs ')} on ${meta.stage}: ${frames.length} fr
 row('step', step);
 row('save', save);
 row('load', load);
+const slow = step.map((ms, i) => ({ f: i + 1, ms })).sort((a, b) => b.ms - a.ms).slice(0, 8);
+console.log(`slowest steps: ${slow.map((s) => `${s.ms.toFixed(1)} ms at ${s.f}`).join(', ')}`);
