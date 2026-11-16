@@ -4,25 +4,15 @@ A TypeScript browser port of SRT Executive Showdown 1.2 with parity for the Scra
 
 ## Play
 
-You need node 22 or later. On Windows, play.cmd installs what is missing and opens the game. Otherwise run these two commands and open the address the second one prints.
-
-```bash
-npm install
-```
-
-```bash
-npm run dev
-```
-
-Choose **Play offline**. The game's own keys apply:
+**Default controls**
 
 - Player 1: arrows move, N attacks, M uses a special, B shields and V pauses.
 - Player 2: W A S D move, F attacks, G uses a special, H shields and R pauses.
 - Menus: Player 1's keys. N selects, M goes back, and '.' and ',' change the song where the game offers it.
 
-**Controls** in the lobby sets your own keys. On one computer they become Player 1's keys when the game starts, and the game's settings menu can still change them.
+In the lobby you can set your own keys. On one computer they become Player 1's keys when the game starts, and the game's settings menu can still change them.
 
-Controllers work in the standard layout. The left stick or the D-pad moves, A attacks and selects, B uses a special and goes back, X and Y jump, the shoulder buttons and triggers shield, and Back and Start pause. On one computer the first controller you use plays Player 1 and the next one plays Player 2.
+Detected controllers work in the standard layout. The left stick or the D-pad moves, A attacks and selects, B uses a special and goes back, X and Y jump, the shoulder buttons and triggers shield, and Back and Start pause. On one computer the first controller you use plays Player 1 and the next one plays Player 2.
 
 **Touch controls** lets you use a touch screen controller. The controls hide while a controller is in use and come back at the next touch.
 
@@ -49,6 +39,18 @@ Before a player's first online game, the page says that playing online shares IP
 3. The host picks the input delay and starts the game.
 
 Your keys from Controls play your own player, so both players can use the same keys. In matches and on character select each player controls their own fighter. In the other menus both players' keys count as Player 1's, so either player can move through them. When the game asks for a save or art code, the host answers, and the other players' keys do nothing until the host does. One frame of input delay (33 ms) suits most connections. Two frames give fewer visible corrections on links slower than about 100 ms.
+
+## Hosting build locally
+
+You need node 22 or later. On Windows, play.cmd installs what is missing and opens the game. Otherwise run these two commands and open the address the second one prints.
+
+```bash
+npm install
+```
+
+```bash
+npm run dev
+```
 
 To try online play on one computer, run 'play online', or run these in two terminals and open two tabs:
 
