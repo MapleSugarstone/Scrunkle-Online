@@ -30,9 +30,9 @@ After a to save a replay. A replay saved with another version of the game may no
 
 ## Online play
 
-Online games are P2P (peer to peer). Every player runs the whole game from the title screen, and inputs travel directly between browsers. A small room server in `server/` hands out room codes and passes the connection setup between players. It relays inputs only for a pair of players whose direct connection fails.
+Online games are P2P (peer to peer). Every player runs the whole game from the title screen, and inputs travel directly between browsers using WebRTC. A small room server in `server/` hands out room codes and passes the connection setup between players. It relays inputs only for a pair of players whose direct connection fails (This can cause usage limit increases and slightly slower connection).
 
-Before a player's first online game, the page says that playing online shares IP addresses with the other players in the room, because the connections are direct. Once they accept, that browser does not show it again.
+Before a player's first online game, the page says that playing online shares IP addresses with the other players in the room because the connections are direct. Please only play online with folks you trust!!
 
 1. One player chooses **Host an online game** and shares the six-character room code.
 2. The other enters the code and chooses **Join**.
