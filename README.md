@@ -4,7 +4,7 @@ A TypeScript browser port of SRT Executive Showdown 1.2 with parity for the Scra
 
 ## Play
 
-You need `node` 22 or later. On Windows, `play.cmd` installs what is missing and opens the game. Otherwise run these two commands and open the address the second one prints.
+You need node 22 or later. On Windows, play.cmd installs what is missing and opens the game. Otherwise run these two commands and open the address the second one prints.
 
 ```bash
 npm install
@@ -18,23 +18,21 @@ Choose **Play offline**. The game's own keys apply:
 
 - Player 1: arrows move, N attacks, M uses a special, B shields and V pauses.
 - Player 2: W A S D move, F attacks, G uses a special, H shields and R pauses.
-- Menus: Player 1's keys. N selects, M goes back, and `.` and `,` change the song where the game offers it.
+- Menus: Player 1's keys. N selects, M goes back, and '.' and ',' change the song where the game offers it.
 
 **Controls** in the lobby sets your own keys. On one computer they become Player 1's keys when the game starts, and the game's settings menu can still change them.
 
-Controllers work in the standard layout. The left stick or the D-pad moves, A attacks and selects, B uses a special and goes back, X and Y jump, the shoulder buttons and triggers shield, and Back and Start pause. On one computer the first controller you use plays Player 1 and the next one plays Player 2. **Controls** names the controllers the browser sees once you press a button on one.
+Controllers work in the standard layout. The left stick or the D-pad moves, A attacks and selects, B uses a special and goes back, X and Y jump, the shoulder buttons and triggers shield, and Back and Start pause. On one computer the first controller you use plays Player 1 and the next one plays Player 2.
 
-On touch screens a joystick and five buttons appear during play, beside the stage when the screen is wide and below it when the screen is tall. The joystick centers where your thumb lands. The controls hide while a controller is in use and come back at the next touch. **Touch controls** in the lobby turns them on or off, and the **Touch buttons** tab under **Controls** swaps what two buttons do.
+**Touch controls** lets you use a touch screen controller. The controls hide while a controller is in use and come back at the next touch.
 
-**Leave game** under the stage goes back to the start screen. The page loads every image and short sound before **Play offline** turns on, as the original loads its whole project before it starts. The music keeps loading after that.
-
-**Display** on the start screen picks how the stage is drawn, and F2 picks the next mode at any time. **Smooth** draws at your screen's resolution. **Old flash game** draws at half the stage's size, dithers the picture to 256 colors and enlarges it. **Handheld** draws on a grid three quarters of the stage's size, turns every vector costume into a bitmap at that same scale, draws every costume with hard pixel edges and enlarges the result. The mode changes only the picture, so online players can each use a different one.
+**Display** are shaders. F2 picks the next shader. "Smooth" draws at screen resolution. "Old flash game" draws at half the stage's size, dithers the picture to 256 colors and enlarges it. "Handheld" draws on a grid three quarters of the stage's size, turns every vector costume into a bitmap at that same scale, draws every costume with hard pixel edges and enlarges the result. The mode changes only the picture and doesn't affect gameplay.
 
 **Actually wear hats** on the start screen draws each fighter's hat on the fighter's head in every animation frame. The hat turns and flips with the fighter, gets the fighter's white outline and drawn with the fighter so the other fighter can stand in front of it. Like **Display**, it doesn't affect gameplay logic.
 
 ### Saves
 
-Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen. **Save** downloads your code as `SRT Executive Showdown save.txt`. **Load** asks for a code: paste one, or choose the file button beside the answer box to open a saved `.txt` file. A loaded code becomes this browser's save. The game ends every code with `|`, and loading such a code adds an empty value that turns the next unlock into an unreadable value in later codes. The page removes empty values from a code before the game reads it and from this browser's save, and downloaded codes have none. Art mode codes download and open the same way, as `SRT Executive Showdown art.txt`. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
+Your progress stays in-browser. "Save" downloads your code as "SRT Executive Showdown save.txt." "Load" asks for a code: paste one, or upload a .txt file. A loaded code becomes the browser's save. The game ends every code with "|", and loading such a code adds an empty value that turns the next unlock into an unreadable value in later codes. This port bypasses this by rejecting the extra character. Art mode codes download and open the same way, as SRT Executive Showdown art.txt. Online games start from the game's own data on every computer, so all players start the same and they never modify your save.
 
 ### Replays
 
@@ -52,7 +50,7 @@ Before a player's first online game, the page says that playing online shares IP
 
 Your keys from **Controls** play your own player, so both players can use the same keys. In matches and on character select each player controls their own fighter. In the other menus both players' keys count as Player 1's, so either player can move through them. When the game asks for a save or art code, the host answers, and the other players' keys do nothing until the host does. One frame of input delay (33 ms) suits most connections. Two frames give fewer visible corrections on links slower than about 100 ms.
 
-To try online play on one computer, run `play online`, or run these in two terminals and open two tabs:
+To try online play on one computer, run 'play online', or run these in two terminals and open two tabs:
 
 ```bash
 npm --prefix server install
@@ -66,7 +64,7 @@ npm run worker:dev
 npm run dev
 ```
 
-The room server listens on port 8788, and the page forwards `/api` to it.
+The room server listens on port 8788, and the page forwards '/api' to it.
 
 ## Commands
 
