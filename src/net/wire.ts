@@ -18,6 +18,8 @@ export const OTHER_KEY = '\u0000other';
 const KEY_INDEX = new Map(KEY_TABLE.map((k, i) => [k, i]));
 const MASK_BYTES = 16;
 const OTHER_BIT = 127;
+/** The most UTF-8 bytes an answer takes, which its 2-byte length allows. A full save code is about 2,800. */
+const ANSWER_MAX = 0xffff;
 
 export enum Kind {
   Inputs = 1,
@@ -67,6 +69,15 @@ export function decodeKeys(buf: Uint8Array, at: number): string[] {
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
+/** An answer as UTF-8, cut at a character boundary to fit `ANSWER_MAX`. */
+function answerBytes(text: string): Uint8Array {
+  const b = enc.encode(text);
+  if (b.length <= ANSWER_MAX) return b;
+  let n = ANSWER_MAX;
+  while (n > 0 && (b[n] & 0xc0) === 0x80) n--;
+  return b.subarray(0, n);
+}
+
 export function encodePacket(p: Packet): ArrayBuffer {
   if (p.kind !== Kind.Inputs) {
     const b = new ArrayBuffer(10);
@@ -79,7 +90,7 @@ export function encodePacket(p: Packet): ArrayBuffer {
   const parts: Uint8Array[] = [];
   let size = 1 + 1 + 4 + 4 + 4 + 1 + 4 + 4;
   for (const inp of p.inputs) {
-    const ans = inp.answer !== undefined ? enc.encode(inp.answer.slice(0, 500)) : null;
+    const ans = inp.answer !== undefined ? answerBytes(inp.answer) : null;
     const rec = new Uint8Array(MASK_BYTES + 1 + (inp.mouse ? 4 : 0) + (ans ? 2 + ans.length : 0));
     encodeKeys(inp.keys, rec, 0);
     let flags = 0;

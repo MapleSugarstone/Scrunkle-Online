@@ -12,9 +12,13 @@ export class QuestionBox {
   private label: HTMLDivElement;
   private input: HTMLInputElement;
   private fileBtn: HTMLButtonElement;
+  private okBtn: HTMLButtonElement;
   private shownFor: unknown = null;
+  private otherAnswerer: string | null = null;
   /** Text submitted since the last frame, taken by the next simulation input. */
   pendingAnswer: string | undefined;
+  /** Rewrites each answer before the game reads it. */
+  cleanAnswer: (text: string) => string = (text) => text;
   onFocusChange?: (focused: boolean) => void;
 
   constructor(parent: HTMLElement) {
@@ -27,6 +31,7 @@ export class QuestionBox {
     this.input = document.createElement('input');
     this.input.type = 'text';
     const ok = document.createElement('button');
+    this.okBtn = ok;
     ok.textContent = '✔';
     ok.setAttribute('aria-label', 'Submit answer');
     // A text file's contents as the answer, for a game whose questions ask for codes.
@@ -44,7 +49,9 @@ export class QuestionBox {
       const file = pick.files?.[0];
       pick.value = '';
       if (!file || file.size > ANSWER_FILE_MAX) return;
-      this.pendingAnswer = (await file.text()).replace(/^﻿/, '').trim();
+      const text = (await file.text()).replace(/^﻿/, '').trim();
+      if (this.otherAnswerer !== null) return;
+      this.pendingAnswer = this.cleanAnswer(text);
       this.input.value = '';
     });
     row.append(this.input, this.fileBtn, ok, pick);
@@ -52,7 +59,7 @@ export class QuestionBox {
     this.el.hidden = true;
     parent.append(this.el);
     const submit = () => {
-      this.pendingAnswer = this.input.value;
+      this.pendingAnswer = this.cleanAnswer(this.input.value);
       this.input.value = '';
     };
     ok.addEventListener('click', submit);
@@ -68,6 +75,18 @@ export class QuestionBox {
   /** Shows the button that answers with a text file's contents. */
   set allowFiles(on: boolean) {
     this.fileBtn.hidden = !on;
+  }
+
+  /** The name of the player who answers in place of this one, or null when this player answers. */
+  set answeredBy(name: string | null) {
+    if (name === this.otherAnswerer) return;
+    this.otherAnswerer = name;
+    // Blur first, because some browsers fire no blur event when a focused input becomes disabled.
+    if (name !== null) this.input.blur();
+    this.input.value = '';
+    this.input.disabled = this.okBtn.disabled = this.fileBtn.disabled = name !== null;
+    this.input.placeholder = name === null ? '' : `${name} answers`;
+    if (name === null && !this.el.hidden) this.input.focus();
   }
 
   update(rt: Runtime): void {

@@ -235,6 +235,15 @@ body {
   display: none;
 }
 
+.question-row button:disabled {
+  background: #c9c4d6;
+  cursor: default;
+}
+
+.question-row input:disabled {
+  background: #f2f2f2;
+}
+
 .question-row button svg {
   display: block;
   margin: auto;

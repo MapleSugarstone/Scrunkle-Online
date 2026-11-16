@@ -3,7 +3,7 @@
 // project's own data on every machine, so all of them start the same, and they never write a save.
 import type { Value } from '../engine/cast.ts';
 import type { Runtime } from '../engine/runtime.ts';
-import { SAVE_LISTS, SAVE_VARS, shownCode } from '../game/saves.ts';
+import { cleanCode, repairSaved, SAVE_LISTS, SAVE_VARS, shownCode } from '../game/saves.ts';
 import { STORAGE_PREFIX } from '../game/page.ts';
 import { downloadFile, fileName } from './download.ts';
 
@@ -53,7 +53,7 @@ export function loadSave(rt: Runtime): void {
   for (const name of SAVE_LISTS) {
     const prop = def.listNames?.[name];
     const items = save.lists[name];
-    if (prop !== undefined && Array.isArray(items) && items.every(isValue)) rt.stage.l[prop].splice(0, Infinity, ...items);
+    if (prop !== undefined && Array.isArray(items) && items.every(isValue)) rt.stage.l[prop].splice(0, Infinity, ...repairSaved(name, items));
   }
   for (const name of SAVE_VARS) {
     const prop = def.varNames?.[name];
@@ -73,7 +73,7 @@ export function codeFiles(onSaved: (name: string) => void): (rt: Runtime) => voi
     if (!shown || shown.code === last) return;
     last = shown.code;
     const name = fileName(shown.name);
-    downloadFile(new Blob([shown.code], { type: 'text/plain' }), name);
+    downloadFile(new Blob([cleanCode(shown.code)], { type: 'text/plain' }), name);
     onSaved(name);
   };
 }

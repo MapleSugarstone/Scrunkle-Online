@@ -1,6 +1,6 @@
 # SRT Executive Showdown
 
-A TypeScript browser port of SRT Executive Showdown 1.2 that plays frame for frame like the original project. The original's scripts are transpiled to TypeScript, and a reference runner compares the port with the original on every frame. Two players can fight on one keyboard or online, where rollback netcode keeps both browsers in step.
+A TypeScript browser port of SRT Executive Showdown 1.2 that plays frame for frame like the original project. The original's scripts are transpiled to TypeScript, and a reference runner compares the port with the original on every frame. Fixes to a few of the original's bugs (`tools/patches.ts`) act only in the states those bugs leave behind, so the recorded scenarios still match. Two players can fight on one keyboard or online, where rollback netcode keeps both browsers in step.
 
 ## Play
 
@@ -34,7 +34,7 @@ On touch screens a joystick and five buttons appear during play, beside the stag
 
 ### Saves
 
-Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change, and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen. **Save** downloads your code as `SRT Executive Showdown save.txt`. **Load** asks for a code: paste one, or choose the file button beside the answer box to open a saved `.txt` file. A loaded code becomes this browser's save. Art mode codes download and open the same way, as `SRT Executive Showdown art.txt`. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
+Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change, and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen. **Save** downloads your code as `SRT Executive Showdown save.txt`. **Load** asks for a code: paste one, or choose the file button beside the answer box to open a saved `.txt` file. A loaded code becomes this browser's save. The game ends every code with `|`, and loading such a code adds an empty value that turns the next unlock into an unreadable value in later codes. The page removes empty values from a code before the game reads it and from this browser's save, and downloaded codes have none. Art mode codes download and open the same way, as `SRT Executive Showdown art.txt`. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
 
 ### Replays
 
@@ -50,7 +50,7 @@ Before a player's first online game, the page says that playing online shares IP
 2. The other enters the code and chooses **Join**.
 3. The host picks the input delay and starts the game.
 
-Your keys from **Controls** play your own player, so both players can use the same keys. In matches and on character select each player controls their own fighter. In the other menus both players' keys count as Player 1's, so either player can move through them. One frame of input delay (33 ms) suits most connections. Two frames give fewer visible corrections on links slower than about 100 ms.
+Your keys from **Controls** play your own player, so both players can use the same keys. In matches and on character select each player controls their own fighter. In the other menus both players' keys count as Player 1's, so either player can move through them. When the game asks for a save or art code, the host answers, and the other players' keys do nothing until the host does. One frame of input delay (33 ms) suits most connections. Two frames give fewer visible corrections on links slower than about 100 ms.
 
 To try online play on one computer, run `play online`, or run these in two terminals and open two tabs:
 
@@ -87,7 +87,7 @@ To deploy the room server:
 | `npm run extract` | Unpacks `game.sb3` into `sb3/`. |
 | `npm run decompile` | Prints every script as pseudocode into `out/dec/`. |
 | `npm run ref:dump` | Records costume data, vector images and touching masks from the original. |
-| `npm run transpile` | Writes `src/game/generated/` and `src/game/assets-data.json`. |
+| `npm run transpile` | Writes `src/game/generated/` and `src/game/assets-data.json`, after applying the fixes to the game's own bugs in `tools/patches.ts`. |
 | `npm run assets` | Writes `public/assets/`. |
 | `npx tsx tools/hat-anchors.ts [--sheets <dir>]` | Finds the head in every fighter costume and writes `src/game/hat-anchors.json` for **Actually wear hats**. `--sheets` draws each character's costumes with a hat and numbers them, for checking. Hand fixes go in `tools/hat-fixes.json`. |
 | `npm run typecheck` | Checks the types. |

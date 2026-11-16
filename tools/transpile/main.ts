@@ -5,6 +5,7 @@ import path from 'node:path';
 import { parseProject, sanitize } from './ir.ts';
 import { analyze, SpriteGen } from './gen.ts';
 import { applyOverrides, readOverrides } from '../lib/lists.ts';
+import { applyPatches } from '../patches.ts';
 import { SAVE_LISTS } from '../../src/game/saves.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
@@ -12,6 +13,7 @@ const project = JSON.parse(fs.readFileSync(path.join(ROOT, 'sb3/project.json'), 
 const overrides = readOverrides(project);
 applyOverrides(project, overrides);
 for (const o of overrides) console.log(`[lists] ${o.list} (${o.target}): ${o.items.length} items from ${o.file}`);
+for (const name of applyPatches(project)) console.log(`[patch] ${name}`);
 const meta = JSON.parse(fs.readFileSync(path.join(ROOT, 'out/ref-meta.json'), 'utf8'));
 const outDir = path.join(ROOT, 'src/game/generated');
 fs.rmSync(outDir, { recursive: true, force: true });

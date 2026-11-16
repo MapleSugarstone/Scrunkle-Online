@@ -16,6 +16,21 @@ export const SAVE_VARS: string[] = [];
 /** The game asks only for save and art codes, so the question box also takes a text file as the answer. */
 export const CODE_ANSWERS = true;
 
+/** A save or art code without the empty values that the game's trailing `|` would load as items. */
+export function cleanCode(code: string): string {
+  return code
+    .trim()
+    .split('|')
+    .filter((v) => v !== '')
+    .join('|');
+}
+
+/** Removes the empty items and leading `|` that codes with empty values left in a saved `!SAVE_DATA`. */
+export function repairSaved(name: string, items: Value[]): Value[] {
+  if (name !== '!SAVE_DATA') return items;
+  return items.map((v) => (typeof v === 'string' ? v.replace(/^\|+/, '') : v)).filter((v) => v !== '');
+}
+
 /**
  * Stage lists whose monitors the page never draws. The save screen shows the raw save and the code to copy, and
  * Save downloads the code as a file instead.

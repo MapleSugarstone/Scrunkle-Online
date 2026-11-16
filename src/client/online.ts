@@ -162,13 +162,19 @@ export class OnlineGame {
     const own = loadControls();
     this.stop = startFixedLoop(
       () => {
+        // The host alone answers a question. The question box takes every key while it is open in offline play, so the
+        // other players' keys stay out of the game until the host answers.
+        const answers = this.local === this.host;
+        this.game.question.answeredBy = answers ? null : this.name(this.host);
+        if (!answers) this.game.question.pendingAnswer = undefined;
+        const asked = !answers && this.game.rt.questions.length > 0;
         const pressed = input.sampleKeys();
         // Every controller and the touch controls play this player's own seat.
         const acts = pads.sample().flat();
         // Shared menus take everyone's keys as Player 1's; character select and matches take each seat's own.
         const seat = seatKeys(this.game.rt, seatScreen(this.game.rt) ? this.local : 0);
-        const keys = new Set(translateKeys(pressed, own, seat));
-        for (const k of actionKeys(acts, seat)) keys.add(k);
+        const keys = new Set(asked ? [] : translateKeys(pressed, own, seat));
+        if (!asked) for (const k of actionKeys(acts, seat)) keys.add(k);
         const p: PlayerInput = { keys: [...keys] };
         // Only the first seat drives the shared mouse pointer.
         const mouse = this.local === this.start.seats[0] ? input.sampleMouse() : undefined;
@@ -179,8 +185,10 @@ export class OnlineGame {
         }
         if (!this.session.tick(p)) {
           // The frame did not advance, so offer the same input again next tick.
-          input.retap(pressed);
-          pads.retap(acts);
+          if (!asked) {
+            input.retap(pressed);
+            pads.retap(acts);
+          }
           if (p.mouse) input.remouse(p.mouse);
           if (p.answer !== undefined) this.game.question.pendingAnswer ??= p.answer;
         }
@@ -241,6 +249,7 @@ export class OnlineGame {
 
   leave(): void {
     this.stop?.();
+    this.game.question.answeredBy = null;
     if (this.probeTimer) clearInterval(this.probeTimer);
     // The goodbye goes both directly and through the room, so it arrives even if one way is down.
     const bye = this.session.goodbye();

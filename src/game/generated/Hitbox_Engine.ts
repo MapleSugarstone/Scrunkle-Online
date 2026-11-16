@@ -1547,6 +1547,14 @@ export function build(rt: Runtime) {
     if (eq(G.v.training, 1)) {
       p_set_gimmick(t, "1", item(G.l.P_Char, 1));
       p_set_gimmick(t, "2", item(G.l.P_Char, 2));
+      if (!eq(item(G.l.P_Stunlock, 3), 0)) {
+        replaceItem(G.l.P_Stunlock, 3, "0");
+        replaceItem(G.l.P_Hitstun, 3, "0");
+      }
+      if (!eq(item(G.l.P_Stunlock, 4), 0)) {
+        replaceItem(G.l.P_Stunlock, 4, "0");
+        replaceItem(G.l.P_Hitstun, 4, "0");
+      }
     }
   }
 
