@@ -36,11 +36,11 @@ Your progress stays in-browser. "Save" downloads your code as "SRT Executive Sho
 
 ### Replays
 
-After a match of 10 seconds or more the page asks whether to save a replay. A replay saved with another version of the game may not play the same.
+After a to save a replay. A replay saved with another version of the game may not play the same. You can either export them as mp4s or replay them as a file.
 
 ## Online play
 
-Online games are peer to peer. Every player runs the whole game from the title screen, and inputs travel directly between browsers. A small room server in `server/` hands out room codes and passes the connection setup between players. It relays inputs only for a pair of players whose direct connection fails.
+Online games are P2P (peer to peer). Every player runs the whole game from the title screen, and inputs travel directly between browsers. A small room server in `server/` hands out room codes and passes the connection setup between players. It relays inputs only for a pair of players whose direct connection fails.
 
 Before a player's first online game, the page says that playing online shares IP addresses with the other players in the room, because the connections are direct. Once they accept, that browser does not show it again.
 
@@ -48,7 +48,7 @@ Before a player's first online game, the page says that playing online shares IP
 2. The other enters the code and chooses **Join**.
 3. The host picks the input delay and starts the game.
 
-Your keys from **Controls** play your own player, so both players can use the same keys. In matches and on character select each player controls their own fighter. In the other menus both players' keys count as Player 1's, so either player can move through them. When the game asks for a save or art code, the host answers, and the other players' keys do nothing until the host does. One frame of input delay (33 ms) suits most connections. Two frames give fewer visible corrections on links slower than about 100 ms.
+Your keys from Controls play your own player, so both players can use the same keys. In matches and on character select each player controls their own fighter. In the other menus both players' keys count as Player 1's, so either player can move through them. When the game asks for a save or art code, the host answers, and the other players' keys do nothing until the host does. One frame of input delay (33 ms) suits most connections. Two frames give fewer visible corrections on links slower than about 100 ms.
 
 To try online play on one computer, run 'play online', or run these in two terminals and open two tabs:
 
