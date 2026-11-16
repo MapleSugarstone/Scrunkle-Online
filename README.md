@@ -1,6 +1,6 @@
-# SRT Executive Showdown
+# Scrunkle Online
 
-A TypeScript browser port of SRT Executive Showdown 1.2 that plays frame for frame like the original project. The original's scripts are transpiled to TypeScript, and a reference runner compares the port with the original on every frame. Fixes to a few of the original's bugs (`tools/patches.ts`) act only in the states those bugs leave behind, so the recorded scenarios still match. Two players can fight on one keyboard or online, where rollback netcode keeps both browsers in step.
+A TypeScript browser port of SRT Executive Showdown 1.2 with parity for the Scratch/Turbowarp project. The original's scripts are transpiled to TypeScript, and a reference checks parity to ensure the games play the same. I'll fix some bugs throughout that will break some parity unless they're fixed on the original.
 
 ## Play
 
@@ -30,15 +30,15 @@ On touch screens a joystick and five buttons appear during play, beside the stag
 
 **Display** on the start screen picks how the stage is drawn, and F2 picks the next mode at any time. **Smooth** draws at your screen's resolution. **Old flash game** draws at half the stage's size, dithers the picture to 256 colors and enlarges it. **Handheld** draws on a grid three quarters of the stage's size, turns every vector costume into a bitmap at that same scale, draws every costume with hard pixel edges and enlarges the result. The mode changes only the picture, so online players can each use a different one.
 
-**Actually wear hats** on the start screen draws each fighter's hat on the fighter's head in every animation frame. The hat turns and flips with the fighter, gets the fighter's white outline, and is drawn with the fighter, so the other fighter can stand in front of it. Like **Display**, it changes only the picture.
+**Actually wear hats** on the start screen draws each fighter's hat on the fighter's head in every animation frame. The hat turns and flips with the fighter, gets the fighter's white outline and drawn with the fighter so the other fighter can stand in front of it. Like **Display**, it doesn't affect gameplay logic.
 
 ### Saves
 
-Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change, and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen. **Save** downloads your code as `SRT Executive Showdown save.txt`. **Load** asks for a code: paste one, or choose the file button beside the answer box to open a saved `.txt` file. A loaded code becomes this browser's save. The game ends every code with `|`, and loading such a code adds an empty value that turns the next unlock into an unreadable value in later codes. The page removes empty values from a code before the game reads it and from this browser's save, and downloaded codes have none. Art mode codes download and open the same way, as `SRT Executive Showdown art.txt`. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
+Your progress stays in this browser. In offline play the page keeps the game's save, settings and keybinds as they change and puts them back the next time you play. The game's own save codes still work: the last row of **Settings** opens the save screen. **Save** downloads your code as `SRT Executive Showdown save.txt`. **Load** asks for a code: paste one, or choose the file button beside the answer box to open a saved `.txt` file. A loaded code becomes this browser's save. The game ends every code with `|`, and loading such a code adds an empty value that turns the next unlock into an unreadable value in later codes. The page removes empty values from a code before the game reads it and from this browser's save, and downloaded codes have none. Art mode codes download and open the same way, as `SRT Executive Showdown art.txt`. Online games start from the game's own data on every computer, so all players start the same, and they never change your save.
 
 ### Replays
 
-After a match of 10 seconds or more, offline or online, the page asks whether to save a replay. **Replays** on the start screen lists them, renames and deletes them, and plays them with pause, frame steps, speeds and a seek bar. Its download button saves a replay as an MP4 video at 480p, 720p or 1080p, recorded while the replay plays once at normal speed, or as a `.meow` file. **Upload** adds `.meow` files from other players. A replay saved with another version of the game may not play the same, and the player says so when it stops matching.
+After a match of 10 seconds or more the page asks whether to save a replay. A replay saved with another version of the game may not play the same.
 
 ## Online play
 
@@ -67,18 +67,6 @@ npm run dev
 ```
 
 The room server listens on port 8788, and the page forwards `/api` to it.
-
-## Publishing
-
-The workflow in `.github/workflows/pages.yml` type-checks and builds the game and publishes `dist/` on every push to `main`. Set the repository's Pages source to GitHub Actions before the first push. The generated code and `public/assets` are committed, because building them needs the reference runner.
-
-To deploy the room server:
-
-1. Run `npx wrangler login` in `server/`, then `npm run worker:deploy` in the project root.
-2. Check that `<address>/api/health` answers with the protocol number.
-3. If the address differs from the one in `pages.yml`, put it there or in a repository variable named `RELAY_URL`.
-
-`server/wrangler.toml` allows the published site's origin in `ALLOWED_ORIGINS`. Deploy the room server again whenever `src/net/protocol.ts` or `server/` changes.
 
 ## Commands
 
